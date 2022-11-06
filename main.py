@@ -40,6 +40,7 @@ def simulate_data(seed: int,
 
     beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_  # we should also experiment with non-monotonic links
     labels_ = np.zeros([sample_size, 1])
+    beta_dict = dict()
     for neuron in range(number_neurons_):
         betas = np.random.randn(number_features_, 1) * (beta_eigenvalues ** 0.5).reshape(-1, 1)
         noise = np.random.randn(sample_size, 1) * noise_size_
@@ -48,7 +49,8 @@ def simulate_data(seed: int,
             += RandomFeaturesGenerator.apply_activation_to_multiplied_signals(
             multiplied_signals=features @ betas + noise,
             activation=activation_)
-    return labels_, features
+        beta_dict[neuron] = betas
+    return labels_, features, beta_dict
 
 
 def main(seed: int,
@@ -57,7 +59,8 @@ def main(seed: int,
          beta_and_psi_link: float,
          noise_size: float,
          activation: str,
-         number_neurons: int) -> dict:
+         number_neurons: int,
+         use_random_features: bool = True) -> dict:
     """
     Main simulation function
     :param seed:
@@ -69,13 +72,13 @@ def main(seed: int,
     :param number_neurons_:
     :return:
     """
-    labels, features = simulate_data(seed=seed,
-                                     sample_size=full_sample_size,
-                                     number_features_=number_features,
-                                     beta_and_psi_link_=beta_and_psi_link,
-                                     noise_size_=noise_size,
-                                     activation_=activation,
-                                     number_neurons_=number_neurons)
+    labels, features, beta_dict = simulate_data(seed=seed,
+                                                sample_size=full_sample_size,
+                                                number_features_=number_features,
+                                                beta_and_psi_link_=beta_and_psi_link,
+                                                noise_size_=noise_size,
+                                                activation_=activation,
+                                                number_neurons_=number_neurons)
 
     gamma = 1.
     number_random_features = 10000
@@ -85,12 +88,14 @@ def main(seed: int,
                      'number_features': number_random_features,
                      'bias_distribution': None,
                      'bias_distribution_parameters': [0, gamma]}
-
-    random_features = RandomFeaturesGenerator.generate_random_neuron_features(
-        features,
-        seed + 10,
-        **specification
-    )
+    if use_random_features:
+        random_features = RandomFeaturesGenerator.generate_random_neuron_features(
+            features,
+            seed + 10,
+            **specification
+        )
+    else:
+        random_features = features
 
     in_sample_period = int(full_sample_size / 2)
 
@@ -114,6 +119,10 @@ def main(seed: int,
         core_z_values=None,
         clip_bstar=10000)
 
+    # TODO MOHAMMAD: When number_neurons = 1
+    #  and noise = 0 and activation = linear and sample_size is large relative to number_features,
+    #  then you should recover the true betas
+
     return regression_results
 
 
@@ -131,3 +140,4 @@ if __name__ == '__main__':
     number_neurons = 1
 
     seed = 0
+    results = main()
