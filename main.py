@@ -4,6 +4,15 @@ from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
 
 
+def great(x: int) -> int:
+    """
+
+    :param x: ineteger
+    :return: another integer, x^2
+    """
+    return x ** 2
+
+
 def simulate_data(seed: int,
                   sample_size: int,
                   number_features_: int,
@@ -13,6 +22,8 @@ def simulate_data(seed: int,
                   number_neurons_: int = 1
                   ):
     """
+    this function simulates potentially highly non-linear data on which we will be testing
+    our RMT stuff
 
     :param number_neurons_: we generate data y = \sum_{i=1}^K activation(features * beta + noise)
     each summand is a neuron. K = number_neurons
@@ -40,20 +51,24 @@ def simulate_data(seed: int,
     return labels_, features
 
 
-if __name__ == '__main__':
-    # export PYTHONPATH="${PYTHONPATH}:/Users/malamud/Dropbox/MY_STUFF/TRADING/virtueofcomplexityeverywhere"
-    full_sample_size = 2000
-    number_features = 100
-    beta_and_psi_link = 0.
-    noise_size = 0.
-
+def main(seed: int,
+         full_sample_size: int,
+         number_features: int,
+         beta_and_psi_link: float,
+         noise_size: float,
+         activation: str,
+         number_neurons: int) -> dict:
     """
-    activation = linear and number_neurons = 1 corresponds to an exact linear model. 
+    Main simulation function
+    :param seed:
+    :param sample_size:
+    :param number_features_:
+    :param beta_and_psi_link_:
+    :param noise_size_:
+    :param activation_:
+    :param number_neurons_:
+    :return:
     """
-    activation = 'linear'
-    number_neurons = 1
-
-    seed = 0
     labels, features = simulate_data(seed=seed,
                                      sample_size=full_sample_size,
                                      number_features_=number_features,
@@ -98,3 +113,21 @@ if __name__ == '__main__':
         keep_only_big_beta=False,
         core_z_values=None,
         clip_bstar=10000)
+
+    return regression_results
+
+
+if __name__ == '__main__':
+    # export PYTHONPATH="${PYTHONPATH}:/Users/malamud/Dropbox/MY_STUFF/TRADING/virtueofcomplexityeverywhere"
+    full_sample_size = 2000
+    number_features = 100
+    beta_and_psi_link = 0.
+    noise_size = 0.
+
+    """
+    activation = linear and number_neurons = 1 corresponds to an exact linear model. 
+    """
+    activation = 'linear'
+    number_neurons = 1
+
+    seed = 0
