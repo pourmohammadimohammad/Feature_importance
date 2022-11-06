@@ -6,35 +6,37 @@ from helpers.random_features import RandomFeatures
 
 def simulate_data(seed: int,
                   sample_size: int,
-                  number_features: int,
-                  beta_and_psi_link: float,
-                  noise_size: float,
-                  activation: str = 'linear',
-                  number_neurons: int = 1
+                  number_features_: int,
+                  beta_and_psi_link_: float,
+                  noise_size_: float,
+                  activation_: str = 'linear',
+                  number_neurons_: int = 1
                   ):
     """
 
-    :param type_of_non_linearity:
+    :param number_neurons_: we generate data y = \sum_{i=1}^K activation(features * beta + noise)
+    each summand is a neuron. K = number_neurons
+    :param activation_: type of non-linearity
     :param sample_size: sample size
-    :param number_features: number_features
-    :param beta_and_psi_link: how eigenvalues of Sigma_beta and Psi are related
-    :param noise_size: size of noise
-    :return:
+    :param number_features_: number_features
+    :param beta_and_psi_link_: how eigenvalues of Sigma_beta and Psi are related
+    :param noise_size_: size of noise
+    :return: labels and features. Labels are noisy functions of features
     """
     np.random.seed(seed)
-    psi_eigenvalues = np.abs(np.random.uniform(0.01, 1, [1, number_features]))
-    features = np.random.randn(sample_size, number_features) * (psi_eigenvalues ** 0.5)
+    psi_eigenvalues = np.abs(np.random.uniform(0.01, 1, [1, number_features_]))
+    features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
 
-    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link  # we should also experiment with non-monotonic links
+    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_  # we should also experiment with non-monotonic links
     labels_ = np.zeros([sample_size, 1])
-    for neuron in range(number_neurons):
-        betas = np.random.randn(number_features, 1) * (beta_eigenvalues ** 0.5).reshape(-1, 1)
-        noise = np.random.randn(sample_size, 1) * noise_size
+    for neuron in range(number_neurons_):
+        betas = np.random.randn(number_features_, 1) * (beta_eigenvalues ** 0.5).reshape(-1, 1)
+        noise = np.random.randn(sample_size, 1) * noise_size_
 
         labels_ \
             += RandomFeaturesGenerator.apply_activation_to_multiplied_signals(
             multiplied_signals=features @ betas + noise,
-            activation=activation)
+            activation=activation_)
     return labels_, features
 
 
@@ -54,11 +56,11 @@ if __name__ == '__main__':
     seed = 0
     labels, features = simulate_data(seed=seed,
                                      sample_size=full_sample_size,
-                                     number_features=number_features,
-                                     beta_and_psi_link=beta_and_psi_link,
-                                     noise_size=noise_size,
-                                     activation=activation,
-                                     number_neurons=number_neurons)
+                                     number_features_=number_features,
+                                     beta_and_psi_link_=beta_and_psi_link,
+                                     noise_size_=noise_size,
+                                     activation_=activation,
+                                     number_neurons_=number_neurons)
 
     gamma = 1.
     number_random_features = 10000
