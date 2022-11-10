@@ -54,7 +54,7 @@ def simulate_data(seed: int,
             multiplied_signals=features @ betas + noise,
             activation=activation_)
         beta_dict[neuron] = betas
-    return labels_, features, beta_dict
+    return labels_, features, beta_dict, psi_eigenvalues
 
 
 def main(seed: int,
@@ -84,35 +84,44 @@ def main(seed: int,
     return regression_results
 
 
-if __name__ == '__main__':
+def run_experiment(seed: int,
+                   sample_size: int,
+                   number_features_: int,
+                   beta_and_psi_link_: float,
+                   noise_size_: float,
+                   shrinkage_list: list,
+                   activation_: str = 'linear',
+                   number_neurons_: int = 1,
+                   use_random_features: bool = False,
 
-    full_sample_size = 2000
-    number_features = 100
-    beta_and_psi_link = 0.
-    noise_size = 0.
-    use_random_features = True
-
+                   ):
     """
-    activation = linear and number_neurons = 1 corresponds to an exact linear model. 
-    """
-    activation = 'linear'
-    number_neurons = 1
 
-    seed = 0
+    :param shrinkage_list:
+    :param seed:
+    :param sample_size:
+    :param number_features_:
+    :param beta_and_psi_link_:
+    :param noise_size_:
+    :param activation_:
+    :param number_neurons_:
+    :param use_random_features:
+    :return: Plot for comparison
+    """
 
     labels, features, beta_dict = simulate_data(seed=seed,
-                                                sample_size=full_sample_size,
-                                                number_features_=number_features,
-                                                beta_and_psi_link_=beta_and_psi_link,
-                                                noise_size_=noise_size,
-                                                activation_=activation,
-                                                number_neurons_=number_neurons)
-
+                                                sample_size=sample_size,
+                                                number_features_=number_features_,
+                                                beta_and_psi_link_=beta_and_psi_link_,
+                                                noise_size_=noise_size_,
+                                                activation_=activation_,
+                                                number_neurons_=number_neurons_)
     gamma = 1.
     number_random_features = 10000
+
     specification = {'distribution': 'normal',
                      'distribution_parameters': [0, gamma],
-                     'activation': activation,
+                     'activation': activation_,
                      'number_features': number_random_features,
                      'bias_distribution': None,
                      'bias_distribution_parameters': [0, gamma]}
@@ -125,9 +134,7 @@ if __name__ == '__main__':
     else:
         random_features = features
 
-    in_sample_period = int(full_sample_size / 2)
-
-    shrinkage_list = np.exp(np.arange(-10, 20, 6)).tolist()
+    in_sample_period = int(sample_size / 2)
 
     regression_results = RandomFeatures.ridge_regression_single_underlying(
         signals=features[:in_sample_period, :],
@@ -147,12 +154,117 @@ if __name__ == '__main__':
         core_z_values=None,
         clip_bstar=10000)  # understand what this clip does
 
-    plt.title(['Beta for different shrinkage'])
+    plt.title(['Beta for different shrinkage and c=' + str(number_features_ / sample_size)])
     legend_list = []
     for i in range(len(shrinkage_list)):
-        legend_list.append(['z = ' + str(round(shrinkage_list[i],2))])
-        plt.scatter(regression_results['betas'][i],beta_dict[0])
+        legend_list.append(['z = ' + str(round(shrinkage_list[i], 2))])
+        plt.scatter(regression_results['betas'][i], beta_dict[0])
 
     plt.legend(legend_list)
+    plt.xlabel('True Beta')
+    plt.ylabel('Estimated Beta')
     plt.show()
 
+
+if __name__ == '__main__':
+
+    # run_experiment(seed=0,
+    #                sample_size=100,
+    #                number_features_=10000,
+    #                beta_and_psi_link_=2,
+    #                noise_size_=0,
+    #                activation_='linear',
+    #                number_neurons_=1,
+    #                shrinkage_list=np.exp(np.arange(-10, 10, 5)).tolist())
+    #
+    # run_experiment(seed=0,
+    #                sample_size=10000,
+    #                number_features_=100,
+    #                beta_and_psi_link_=2,
+    #                noise_size_=0,
+    #                activation_='linear',
+    #                number_neurons_=1,
+    #                shrinkage_list=np.exp(np.arange(-10, 10, 5)).tolist())
+
+    # gamma = 1.
+    # number_random_features = 10000
+    # use_random_features: bool = False
+    #
+    # specification = {'distribution': 'normal',
+    #                  'distribution_parameters': [0, gamma],
+    #                  'activation': activation_,
+    #                  'number_features': number_random_features,
+    #                  'bias_distribution': None,
+    #                  'bias_distribution_parameters': [0, gamma]}
+    # if use_random_features:
+    #     random_features = RandomFeaturesGenerator.generate_random_neuron_features(
+    #         features,
+    #         seed + 10,
+    #         **specification
+    #     )
+    # else:
+    #     random_features = features
+    #
+    # in_sample_period = int(sample_size / 2)
+    #
+    #
+    # regression_results = RandomFeatures.ridge_regression_single_underlying(
+    #     signals=features[:in_sample_period, :],
+    #     labels=labels[:in_sample_period],
+    #     future_signals=features[in_sample_period:, :],
+    #     shrinkage_list=shrinkage_list,
+    #     use_msrr=False,
+    #     return_in_sample_pred=True,
+    #     compute_smart_weights=False,
+    #     test_fixed_kappas=False,
+    #     fixed_kappas=[],
+    #     test_changing_kappas=False,
+    #     constant_signal=None,
+    #     print_time=False,
+    #     return_beta=True,
+    #     keep_only_big_beta=False,
+    #     core_z_values=None,
+    #     clip_bstar=10000)  # understand what this clip does
+    #
+    # plt.title(['Beta for different shrinkage and c=' + str(number_features_/sample_size)])
+    # legend_list = []
+    # for i in range(len(shrinkage_list)):
+    #     legend_list.append(['z = ' + str(round(shrinkage_list[i], 2))])
+    #     plt.scatter(regression_results['betas'][i], beta_dict[0])
+    #
+    # plt.legend(legend_list)
+    # plt.xlabel('True Beta')
+    # plt.ylabel('Estimated Beta')
+    # plt.show()
+
+    # Implement leave two out estimators
+    # For any matrix A independent of t_1 and t_2
+    # E[R_{t_2+1} S_{t_1}'A S_{t_2} R_{t_1+1}]\ =\  \beta'\Psi A \Psi \beta\
+
+    seed = 0
+    sample_size = 100
+    number_features_ = 10000
+    beta_and_psi_link_ = 2
+    noise_size_ = 0
+    activation_ = 'linear'
+    number_neurons_ = 1
+    shrinkage_list = np.exp(np.arange(-10, 10, 5)).tolist()
+
+    labels, features, beta_dict, psi_eigenvalues = simulate_data(seed=seed,
+                                                sample_size=sample_size,
+                                                number_features_=number_features_,
+                                                beta_and_psi_link_=beta_and_psi_link_,
+                                                noise_size_=noise_size_,
+                                                activation_=activation_,
+                                                number_neurons_=number_neurons_)
+    A = np.eye(number_features_)
+    estimator = 0
+    num = 0
+    for i in range(sample_size):
+        for j in range(sample_size):
+            if j != i:
+                num += 1
+                estimator += labels[i] * features[i] @ A @ features[j] * labels[j]
+
+    estimator = estimator/num
+    true_value = np.dot(beta_dict[0]**2, psi_eigenvalues **2)
