@@ -87,8 +87,8 @@ def rank_features_cross_sectionally(raw_signals: np.ndarray,
     date_ids
     ranking
     axis_
-    print_time : If true we print the run tiem
-    use_pands :  IF true we run the pandas version.
+    print_time : If true we print the run time
+    use_pandas :  IF true we run the pandas version.
 
     Returns
     -------

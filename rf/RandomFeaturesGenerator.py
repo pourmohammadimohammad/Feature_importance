@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import Optional, Tuple
 
+# quick fix, but not sure if this is the right way to go about it
 from helpers.auxilliary_functions import rank_features_cross_sectionally, build_managed_returns_for_msrr
 
 
@@ -293,7 +294,7 @@ class RandomFeaturesGenerator:
             activation: str
     ) -> np.ndarray:
         """
-        this method takes as input signaled already multipled by some weights + cosntant: w*x+b
+        this method takes as input signales already multiplied by some weights + constant: w*x+b
         and returns act(w*x+b)
         :rtype: object
         """

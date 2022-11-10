@@ -1836,6 +1836,9 @@ class RandomFeatures:
         (A'A)^{-1} = U (D^{-1})U' = A'v D^{-2} v'A
         and shrinkage just replaces here
         (A'A)^{-1} = U ((D+shrinkage)^{-1})U'
+        therefore
+        (A'A)^{-1} =  A'v  ((D+shrinkage)^{-1}) D^{-1} v'A
+
 
         :param signals: in sample features
         :param labels: in sample labels

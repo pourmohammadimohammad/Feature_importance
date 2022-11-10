@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
+import matplotlib.pyplot as plt
 
 
 def great(x: int) -> int:
@@ -75,6 +76,30 @@ def main(seed: int,
     :param number_neurons_:
     :return:
     """
+
+    # TODO MOHAMMAD: When number_neurons = 1
+    #  and noise = 0 and activation = linear and sample_size is large relative to number_features,
+    #  then you should recover the true betas
+
+    return regression_results
+
+
+if __name__ == '__main__':
+
+    full_sample_size = 2000
+    number_features = 100
+    beta_and_psi_link = 0.
+    noise_size = 0.
+    use_random_features = True
+
+    """
+    activation = linear and number_neurons = 1 corresponds to an exact linear model. 
+    """
+    activation = 'linear'
+    number_neurons = 1
+
+    seed = 0
+
     labels, features, beta_dict = simulate_data(seed=seed,
                                                 sample_size=full_sample_size,
                                                 number_features_=number_features,
@@ -102,12 +127,12 @@ def main(seed: int,
 
     in_sample_period = int(full_sample_size / 2)
 
-    shrinkage_list = np.exp(np.arange(-10, 20, 1)).tolist()
+    shrinkage_list = np.exp(np.arange(-10, 20, 6)).tolist()
 
     regression_results = RandomFeatures.ridge_regression_single_underlying(
-        signals=random_features[:in_sample_period, :],
+        signals=features[:in_sample_period, :],
         labels=labels[:in_sample_period],
-        future_signals=random_features[in_sample_period:, :],
+        future_signals=features[in_sample_period:, :],
         shrinkage_list=shrinkage_list,
         use_msrr=False,
         return_in_sample_pred=True,
@@ -120,27 +145,14 @@ def main(seed: int,
         return_beta=True,
         keep_only_big_beta=False,
         core_z_values=None,
-        clip_bstar=10000)
+        clip_bstar=10000)  # understand what this clip does
 
-    # TODO MOHAMMAD: When number_neurons = 1
-    #  and noise = 0 and activation = linear and sample_size is large relative to number_features,
-    #  then you should recover the true betas
+    plt.title(['Beta for different shrinkage'])
+    legend_list = []
+    for i in range(len(shrinkage_list)):
+        legend_list.append(['z = ' + str(round(shrinkage_list[i],2))])
+        plt.scatter(regression_results['betas'][i],beta_dict[0])
 
-    return regression_results
+    plt.legend(legend_list)
+    plt.show()
 
-
-if __name__ == '__main__':
-    # export PYTHONPATH="${PYTHONPATH}:/Users/malamud/Dropbox/MY_STUFF/TRADING/virtueofcomplexityeverywhere"
-    full_sample_size = 2000
-    number_features = 100
-    beta_and_psi_link = 0.
-    noise_size = 0.
-
-    """
-    activation = linear and number_neurons = 1 corresponds to an exact linear model. 
-    """
-    activation = 'linear'
-    number_neurons = 1
-
-    seed = 0
-    results = main()
