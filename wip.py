@@ -66,11 +66,11 @@ def smart_w_matrix(features: np.ndarray,
     return W_list
 
 
-def leave_two_out_estimator_vectorized(labels: np.ndarray,
-                                       features: np.ndarray,
-                                       eigenvalues: np.ndarray,
-                                       eigenvectors: np.ndarray,
-                                       shrinkage_list: np.ndarray) -> float:
+def leave_two_out_estimator_vectorized_resolvent(labels: np.ndarray,
+                                                 features: np.ndarray,
+                                                 eigenvalues: np.ndarray,
+                                                 eigenvectors: np.ndarray,
+                                                 shrinkage_list: np.ndarray) -> float:
     """
     # Implement leave two out estimators
     # For any matrix A independent of t_1 and t_2
@@ -106,6 +106,34 @@ def leave_two_out_estimator_vectorized(labels: np.ndarray,
     return estimator_list
 
 
+def leave_two_out_estimator_vectorized_general(labels: np.ndarray,
+                                               features: np.ndarray,
+                                               A: np.ndarray) -> float:
+    """
+    # Implement leave two out estimators
+    # For any matrix A independent of t_1 and t_2
+    # E[R_{t_2+1} S_{t_1}'A S_{t_2} R_{t_1+1}]\ =
+    \  \beta'\Psi A_ right \Psi \beta\
+
+    :param labels: Variables we wish to predict
+    :param features: Signals we use to predict variables
+    :param A: Weighting matrix
+    :return: Unbiased estimator
+    """
+
+    T = np.shape(features)[0]
+
+    num = (T - 1) * T  # divded by T to account for W normalization
+
+    labels_squared = (labels.reshape(-1, 1) * np.squeeze(labels)).reshape(1, -1)
+    matrix_multiplied = features.T @ A @ features
+    np.fill_diagonal(matrix_multiplied, 0)
+
+    estimator = np.sum(labels_squared * matrix_multiplied.reshape(1, -1)) / num
+
+    return estimator
+
+
 def leave_one_out_estimator(labels: np.ndarray,
                             features: np.ndarray,
                             eigenvalues: np.ndarray,
@@ -127,13 +155,89 @@ def leave_one_out_estimator(labels: np.ndarray,
                        eigenvectors=eigenvectors,
                        shrinkage_list=shrinkage_list)
 
-    W_diag_trans = [(1 / (1 - np.diag(w)) - 1).reshape(-1, 1) * (labels.reshape(-1, 1) ** 2) for w in W]
-    s_beta = [
-        (1 / (1 - np.diag(w))).reshape(-1, 1) * labels.reshape(-1, 1) * (labels.reshape(1, -1) * w).sum(0).reshape(-1,
-                                                                                                                   1)
-        for w in W]
-    estimator_list = [np.mean(W_diag_trans[i] - s_beta[i]) for i in range(len(shrinkage_list))]
+    labels_squared = (labels.reshape(-1, 1) ** 2).reshape(-1,1)
+
+    normalizer = [
+        (1 / (1 - np.diag(w))).reshape(-1, 1) for w in W]
+
+    labels_squared_normalized = [
+        labels_squared*(1-n) for n in normalizer]
+
+    s_beta = [normalizer[i]*labels.reshape(-1, 1) * (labels.reshape(1, -1) * W[i]).sum(1).reshape(-1,1) for i in range(len(shrinkage_list))]
+
+    estimator_list = [np.mean(s_beta[i] + labels_squared_normalized[i]) for i in range(len(shrinkage_list))]
+
     return estimator_list
+
+
+def leave_one_out_true_value(beta_dict: np.ndarray,
+                             psi_eigenvalues: np.ndarray,
+                             eigenvalues: np.ndarray,
+                             eigenvectors: np.ndarray,
+                             shrinkage_list: np.ndarray):
+    """
+    Efficient way to estimate \beta \Psi (\hat \Psi + zI)^{-1} \Psi \beta
+    :param beta_dict: beta paramaters (ground truth)
+    :param psi_eigenvalues: True eigenvalues of covariance matrix
+    :param eigenvalues: eigenvalues of covariance matrix
+    :param eigenvectors: eigenvectors of covariance matrix
+    :param shrinkage_list:
+    :return:
+    """
+
+    psi_beta = psi_eigenvalues.reshape(1, -1) * beta_dict[0].reshape(1, -1)
+
+    eigenvectors_projection_left = (eigenvectors.T @ psi_beta.reshape(-1,1)).reshape(1,-1)
+    eigenvectors_projection_right = (beta_dict[0].reshape(1, -1) @ eigenvectors).reshape(1,-1)
+
+    true_values = [
+        np.sum((1 / (eigenvalues.reshape(1, -1) + z)) * eigenvectors_projection_left * eigenvectors_projection_right)
+        for z in
+        shrinkage_list]
+    left_over = np.sum(eigenvectors_projection_left * eigenvectors_projection_right)
+
+    true_values = [left_over - shrinkage_list[i] * true_values[i] for i in range(len(shrinkage_list))]
+
+    return true_values
+
+
+def empirical_stieltjes(eigenvalues, P, shrinkage_list):
+    """
+    :param eigenvalues: Eigenvalues of covariance matrix
+    :param P: Number of features
+    :param shrinkage_list: List of shrinkage z
+    :return: empirical stieltjes transform of normalized covariance matrix
+    """
+
+    estimator = (1 / (eigenvalues.reshape(-1, 1) + shrinkage_list.reshape(1, -1))).sum(0) / P \
+                + (P - len(eigenvalues)) / shrinkage_list / P
+
+    return estimator
+
+
+def efficient_beta_psi_resolvent_true_value(beta_dict: np.ndarray,
+                                 psi_eigenvalues: np.ndarray,
+                                 eigenvalues: np.ndarray,
+                                 eigenvectors: np.ndarray,
+                                 shrinkage_list: np.ndarray):
+    """
+    Efficient way to estimate \beta \Psi (\hat \Psi + zI)^{-1} \Psi \beta
+    :param beta_dict: beta paramaters (ground truth)
+    :param psi_eigenvalues: True eigenvalues of covariance matrix
+    :param eigenvalues: eigenvalues of covariance matrix
+    :param eigenvectors: eigenvectors of covariance matrix
+    :param shrinkage_list:
+    :return:
+    """
+
+    psi_beta = psi_eigenvalues.reshape(1, -1) * beta_dict[0].reshape(1, -1)
+    eigenvectors_projection = psi_beta @ eigenvectors
+    true_values = [np.sum((1 / (eigenvalues.reshape(1, -1) + z)) * eigenvectors_projection ** 2) for z in
+                   shrinkage_list]
+    left_over = np.sum(psi_beta ** 2) - np.sum(eigenvectors_projection ** 2)
+    true_values = [true_values[i] + (1 / shrinkage_list[i]) * left_over for i in range(len(shrinkage_list))]
+
+    return true_values
 
 
 if __name__ == '__main__':
@@ -158,24 +262,19 @@ if __name__ == '__main__':
 
     eigenvalues, eigenvectors = smart_eigenvalue_decomposition(features)
 
-    estimator_list = leave_two_out_estimator_vectorized(labels, features, eigenvalues, eigenvectors, shrinkage_list)
-    psi_beta = psi_eigenvalues.reshape(1, -1) * beta_dict[0].reshape(1, -1)
-    eigenvectors_projection = psi_beta @ eigenvectors
-    true_values = [np.sum((1 / (eigenvalues.reshape(1, -1) + z)) * eigenvectors_projection ** 2) for z in
-                   shrinkage_list]
-    left_over = np.sum(psi_beta ** 2) - np.sum(eigenvectors_projection ** 2)
-    true_values = [true_values[i] + (1 / shrinkage_list[i]) * left_over for i in range(len(shrinkage_list))]
+    estimator_list = leave_one_out_estimator(labels, features, eigenvalues, eigenvectors,
+                                                                  shrinkage_list)
+    true_values = leave_one_out_true_value(beta_dict, psi_eigenvalues, eigenvalues, eigenvectors, shrinkage_list)
+
+    beta_psi_beta = psi_eigenvalues.reshape(1, -1) @ (beta_dict[0].reshape(-1, 1)**2)
+
 
     plt.plot(shrinkage_list, true_values)
     plt.plot(shrinkage_list, estimator_list)
-    plt.legend(['True Value', 'Estimator'])
+    plt.legend(['true_value', 'Estimator'])
     plt.title(f'Leave two out \n'
               f'Error for P = {number_features_}, T = {sample_size} \n beta_and_psi_link_ = {beta_and_psi_link_}')
     plt.xlabel('Value of z, shrinkage')
     plt.show()
 
-    # very_true_values = [ (psi_beta.reshape(1,-1) @ np.linalg.pinv(z*np.eye(number_features_) + features.T@features/sample_size) \
-    #                      @psi_beta.reshape(-1,1))[0] for z in shrinkage_list]
-    #
-    # empirical_stieltjes = (1 / (eigenvalues.reshape(-1, 1) + shrinkage_list.reshape(1, -1))).sum(0) / P \
-    #                       + (P - len(eigenvalues)) / shrinkage_list / P
+    A = np.eye(number_features_)

@@ -43,7 +43,7 @@ def simulate_data(seed: int,
     features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
 
     # should also divide by P to ensure bounded trace norm
-    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / number_features_  # we should also experiment with non-monotonic links
+    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)  # we should also experiment with non-monotonic links
     labels_ = np.zeros([sample_size, 1])
     beta_dict = dict()
     for neuron in range(number_neurons_):
