@@ -65,6 +65,17 @@ def smart_w_matrix(features: np.ndarray,
     W_list = [W[i] + (1 / shrinkage_list[i]) * cov_left_over for i in range(len(shrinkage_list))]
     return W_list
 
+def map_w_to_w_tilde(w_matrix):
+    """
+    We need to map W_{t_1,t_2} to W_{t_1,t_2}/((1-W_{t1,t1})(1-W_{t2,t2})-W_{t1,t2}^2)
+    :param w_matrix:
+    :return:
+    """
+    diag = (1 - np.diag(w_matrix)).reshape(-1, 1) * (1 - np.diag(w_matrix))
+    denominator = diag - (w_matrix ** 2)
+    w_tilde = w_matrix / denominator
+    return np.fill_diagonal(w_tilde, 0)
+
 
 def leave_two_out_estimator_vectorized_resolvent(labels: np.ndarray,
                                                  features: np.ndarray,
@@ -93,15 +104,10 @@ def leave_two_out_estimator_vectorized_resolvent(labels: np.ndarray,
 
     T = np.shape(features)[0]
 
-    num = (T - 1)  # divded by T to account for W normalization
+    num = T * (T - 1)  # divided by T to account for W normalization
+    labels = labels.reshape(-1, 1)
 
-    labels_squared = (labels.reshape(-1, 1) * np.squeeze(labels)).reshape(1, -1)
-
-    W_diag = [(1 - np.diag(w)).reshape(-1, 1) * (1 - np.diag(w)) for w in W]
-    [np.fill_diagonal(w, 0) for w in W]  # get rid of diagonal elements not in the calculations
-    estimator_list = [
-        np.sum(labels_squared * W[i].reshape(1, -1) / (W_diag[i].reshape(1, -1) - W[i].reshape(1, -1) ** 2)) / num \
-        for i in range(len(shrinkage_list))]
+    estimator_list = [labels.T @ map_w_to_w_tilde(w_matrix) @ labels / num for w_matrix in W]
 
     return estimator_list
 
