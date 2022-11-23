@@ -197,6 +197,43 @@ def estimate_mean_leave_two_out(labels: np.ndarray,
 
     return mean_estimator
 
+def estimator_performance(estimator_list, labels_squared ):
+    estimator_list_mean = [np.mean(e) for e in estimator_list]
+
+    estimator_list_std = [np.std(e) for e in estimator_list]
+
+    estimator_list_pi_2 = [np.mean(p ** 2) for p in pi]
+
+    estimator_list_sharpe = [estimator_list_mean[i] / estimator_list_std[i]
+                             for i in range(len(shrinkage_list))]
+
+    estimator_list_mse = [labels_squared - 2 * estimator_list_mean[i] + estimator_list_pi_2[i]
+                          for i in range(len(shrinkage_list))]
+    estimator_perf = {}
+    estimator_perf['mean'] = estimator_list_mean
+    estimator_perf['std'] = estimator_list_std
+    estimator_perf['pi_2'] = estimator_list_pi_2
+    estimator_perf['mse'] = estimator_list_mse
+    estimator_perf['sharpe'] = estimator_list_sharpe
+    return estimator_perf
+
+def compute_pi_t_tau(w_mat,
+                     shrinkage_list,
+                     labels):
+
+    one_over_one_minus_diag_of_w = [
+        (1 / (1 - np.diag(w))).reshape(-1, 1) for w in w_mat]
+
+    labels_normalized = [
+        labels * (1 - n) for n in one_over_one_minus_diag_of_w]
+
+    s_beta = [one_over_one_minus_diag_of_w[i] * (w_mat[i] @ labels) for i in
+              range(len(shrinkage_list))]
+
+    pi = [s_beta[i] + labels_normalized[i] for i in range(len(shrinkage_list))]
+    return pi
+
+
 
 def leave_one_out_estimator_performance(labels: np.ndarray,
                                         features: np.ndarray,
@@ -214,39 +251,23 @@ def leave_one_out_estimator_performance(labels: np.ndarray,
     :param shrinkage_list:
     :return: Unbiased estimator
     """
+    labels_squared = np.mean(labels ** 2)
 
-    W = smart_w_matrix(features=features,
+    w_matrix = smart_w_matrix(features=features,
                        eigenvalues=eigenvalues,
                        eigenvectors=eigenvectors,
                        shrinkage_list=shrinkage_list)
 
-    normalizer = [
-        (1 / (1 - np.diag(w))).reshape(-1, 1) for w in W]
+    pi = compute_pi_t_tau(w_mat=w_matrix,
+                          shrinkage_list=shrinkage_list,
+                          labels=labels)
 
-    labels_normalized = [
-        labels * (1 - n) for n in normalizer]
-
-    s_beta = [normalizer[i] * (W[i] @ labels) for i in
-              range(len(shrinkage_list))]
-
-    pi = [s_beta[i] + labels_normalized[i] for i in range(len(shrinkage_list))]
+    # now, we compute R_{tau+1}(z) * pi_{T,tau} as a vector. The list is indexed by z while the vector is indexed by tau
     estimator_list = [labels * pi[i] for i in range(len(shrinkage_list))]
-    estimator_list_mean = [np.mean(e) for e in estimator_list]
-    estimator_list_std = [np.std(e) for e in estimator_list]
-    estimator_list_pi_2 = [np.mean(p ** 2) for p in pi]
-    estimator_list_sharpe = [estimator_list_mean[i] / estimator_list_std[i]
-                             for i in range(len(shrinkage_list))]
-    labels_squared = np.mean(labels ** 2)
-    estimator_list_mse = [labels_squared - 2 * estimator_list_mean[i] + estimator_list_pi_2[i]
-                          for i in range(len(shrinkage_list))]
-    estimators = {}
-    estimators['mean'] = estimator_list_mean
-    estimators['std'] = estimator_list_std
-    estimators['pi_2'] = estimator_list_pi_2
-    estimators['mse'] = estimator_list_mse
-    estimators['sharpe'] = estimator_list_sharpe
 
-    return estimators
+    estimator_perf = estimator_performance(estimator_list, labels_squared )
+
+    return estimator_perf
 
 
 def leave_one_out_dumb(labels: np.ndarray,
