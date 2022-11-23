@@ -35,6 +35,9 @@ def simulate_data(seed: int,
     through our activation functions
     :param beta_and_psi_link_: how eigenvalues of Sigma_beta and Psi are related #Mohammad: This the crucial
     parameter for our feature importance application
+
+    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)
+
     :param noise_size_: size of noise
     :return: labels and features. Labels are noisy and potentially non-linear functions of features
     """
@@ -43,7 +46,9 @@ def simulate_data(seed: int,
     features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
 
     # should also divide by P to ensure bounded trace norm
-    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)  # we should also experiment with non-monotonic links
+    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)
+    # we should also experiment with non-monotonic links
+
     labels_ = np.zeros([sample_size, 1])
     beta_dict = dict()
     for neuron in range(number_neurons_):
@@ -52,8 +57,8 @@ def simulate_data(seed: int,
 
         labels_ \
             += RandomFeaturesGenerator.apply_activation_to_multiplied_signals(
-            multiplied_signals=features @ betas + noise,
-            activation=activation_)
+                                                                    multiplied_signals=features @ betas + noise,
+                                                                    activation=activation_)
         beta_dict[neuron] = betas
     return labels_, features, beta_dict, psi_eigenvalues
 

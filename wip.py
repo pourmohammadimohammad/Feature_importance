@@ -260,17 +260,17 @@ def leave_one_out_dumb(labels: np.ndarray,
     :param shrinkage_list:
     :return: Unbiased estimator
     """
-    [T,P] = features.shape
-    covariance = features.T @ features /T
-    inverse = [ np.linalg.pinv(z*np.eye(P) + covariance) for z in shrinkage_list]
-    W = [features@inverse[i]@features.T/T for i in range(len(shrinkage_list))]
+    [T, P] = features.shape
+    covariance = features.T @ features / T
+    inverse = [np.linalg.pinv(z * np.eye(P) + covariance) for z in shrinkage_list]
+    W = [features @ inverse[i] @ features.T / T for i in range(len(shrinkage_list))]
     normalizer = [
         (1 / (1 - np.diag(w))).reshape(-1, 1) for w in W]
 
     labels_normalized = [
         labels * (1 - n) for n in normalizer]
 
-    s_beta = [normalizer[i] * (W[i]@labels) for i in
+    s_beta = [normalizer[i] * (W[i] @ labels) for i in
               range(len(shrinkage_list))]
 
     pi = [s_beta[i] + labels_normalized[i] for i in range(len(shrinkage_list))]
@@ -414,7 +414,7 @@ def very_true_values_xi(features: np.ndarray,
 if __name__ == '__main__':
     # testing leave one out:
     name_list = ['mean', 'std']
-    T = [20, 100, 500,1000]
+    T = [20, 100, 500, 1000]
     # C = [0.1, 0.5, 1, 2, 5, 10]
     C = [0.5, 2]
 
@@ -429,48 +429,11 @@ if __name__ == '__main__':
     number_neurons_ = 1
     shrinkage_list = np.linspace(0.1, 1, 100)
 
-    # c = 0.5
-    # sample_size = 100
-    # number_features_ = int(c * sample_size)
-    # split = int(sample_size / 2)
-    #
-    # labels, features, beta_dict, psi_eigenvalues = simulate_data(seed=seed,
-    #                                                              sample_size=sample_size,
-    #                                                              number_features_=number_features_,
-    #                                                              beta_and_psi_link_=beta_and_psi_link_,
-    #                                                              noise_size_=noise_size_,
-    #                                                              activation_=activation_,
-    #                                                              number_neurons_=number_neurons_)
-    #
-    # eigenvalues, eigenvectors = smart_eigenvalue_decomposition(features)
-    #
-    # estimator = leave_one_out_estimator_performance(
-    #             labels,
-    #             features,
-    #             eigenvalues,
-    #             eigenvectors,
-    #             shrinkage_list)
-    #
-    # estimator_dumb=leave_one_out_dumb(labels, features,shrinkage_list)
-    #
-    # plt.plot(shrinkage_list, estimator['mean'])
-    # plt.plot(shrinkage_list, estimator_dumb[0] )
-    # plt.legend(['estimate','dumb'])
-    #
-    # plt.show()
-
-
-
-    estmator_dict = {}
-
-    for name in name_list:
-        estmator_dict[name] = pd.DataFrame(index=T, columns=C)
-
+    estimator_dict = {name: pd.DataFrame(index=T, columns=C) for name in name_list}
 
     ax_legend = []
     for c in C:
-        ax_legend.append(f'Complexity = {c} INS')
-        ax_legend.append(f'Complexity = {c} OOS')
+        ax_legend.append([f'Complexity = {c} INS', f'Complexity = {c} OOS'])
 
     for i in range(len(T)):
 
@@ -494,8 +457,9 @@ if __name__ == '__main__':
             features_out_of_sample = features[split:, :]
 
             eigenvalues_in_sample, eigenvectors_in_sample = smart_eigenvalue_decomposition(features_in_sample)
-            eigenvalues_out_of_sample, eigenvectors_out_of_sample = smart_eigenvalue_decomposition(
-                features_out_of_sample)
+
+            eigenvalues_out_of_sample, eigenvectors_out_of_sample = \
+                smart_eigenvalue_decomposition(features_out_of_sample)
 
             estimator_in_sample = leave_one_out_estimator_performance(
                 labels_in_sample,
@@ -503,28 +467,30 @@ if __name__ == '__main__':
                 eigenvalues_in_sample,
                 eigenvectors_in_sample,
                 shrinkage_list)
+
             estimator_out_of_sample = leave_one_out_estimator_performance(
-                labels_out_of_sample, features_out_of_sample,
+                labels_out_of_sample,
+                features_out_of_sample,
                 eigenvalues_out_of_sample,
                 eigenvectors_out_of_sample,
                 shrinkage_list)
 
             for name in name_list:
-                estmator_dict[name].loc[T[i],C[j]] = [{'INS':estimator_in_sample[name],'OOS':estimator_out_of_sample[name]}]
-
+                estimator_dict[name].loc[T[i], C[j]] = [
+                    {'INS': estimator_in_sample[name], 'OOS': estimator_out_of_sample[name]}]
 
     error_dict = {}
     for name in name_list:
         fig, ax = plt.subplots(2, 2, sharex=True, figsize=(15, 15))
-        error_dict[name]={}
+        error_dict[name] = {}
         for i in range(len(T)):
             a_0 = i % 2
             a_1 = int((i - a_0) / 2) % 2
             for j in range(len(C)):
-                ins = estmator_dict[name].loc[T[i],C[j]][0]['INS']
-                oos = estmator_dict[name].loc[T[i],C[j]][0]['OOS']
+                ins = estimator_dict[name].loc[T[i], C[j]][0]['INS']
+                oos = estimator_dict[name].loc[T[i], C[j]][0]['OOS']
                 ax[a_0, a_1].plot(shrinkage_list, ins)
-                ax[a_0, a_1].plot(shrinkage_list,oos)
+                ax[a_0, a_1].plot(shrinkage_list, oos)
                 ax[a_0, a_1].set_title(f'T = {T[i]}')
                 error_dict[name][T[i]] = np.mean(np.abs(np.array(ins) - \
                                                         np.array(oos)) / np.array(oos))
@@ -532,6 +498,3 @@ if __name__ == '__main__':
         fig.text(0.5, 0.04, 'z shrinkage', ha='center')
         fig.suptitle(name + f" with beta_and_psi_link_ = {beta_and_psi_link_}", fontsize=14)
         plt.show()
-
-
-
