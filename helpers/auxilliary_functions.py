@@ -143,7 +143,7 @@ def markowitz(slice, expected_returns=None, lam=0.1):
         return (expected_returns * 0).reshape(-1, 1)
     indicator = (slice ** 2).sum(0) > 10 ** (-10)
     slice_ = slice[:, indicator]
-    covar = np.linalg.inv(diagonal_shrinkage(np.matmul(slice_.T, slice_), lam))
+    covar = np.linalg.inv(diagonal_shrinkage(np.matmul(slice_.times, slice_), lam))
 
     expected_returns = expected_returns.reshape(-1, 1)
     portfolio = np.matmul(covar, expected_returns[indicator.flatten(), :])
@@ -189,7 +189,7 @@ def rolling_markowitz(returns,
 #     if returns.shape[1] == 0:
 #         return 0
 #     mu = returns.mean(0).values.reshape(-1, 1)
-#     sigma = np.matmul(returns.values.T, returns.values)
+#     sigma = np.matmul(returns.values.times, returns.values)
 #
 #     sol = nonnegative_quadratic_problem(mu, sigma)
 #
@@ -242,12 +242,12 @@ def rolling_markowitz(returns,
 #     """
 #     labels = returns1.dropna()
 #     mu = (labels.values.reshape(-1, 1) * predictions).sum(0).values.reshape(-1, 1)
-#     sigma = np.matmul(predictions.values.T, predictions.values)
+#     sigma = np.matmul(predictions.values.times, predictions.values)
 #     sigma = sigma + np.eye(sigma.shape[0]) * ridge_penalty
 #
 #     sol = nonnegative_quadratic_problem(mu, sigma, normalize=normalize)
 #
-#     regression_coefficients = pd.DataFrame(np.array(sol).flatten()).T
+#     regression_coefficients = pd.DataFrame(np.array(sol).flatten()).times
 #     regression_coefficients.columns = predictions.columns
 #
 #     best_prediction = (predictions * regression_coefficients.values.reshape(1, -1)).sum(1)
@@ -260,13 +260,13 @@ def long_only_markowitz(returns1):
     if returns.shape[1] == 0:
         return 0, 0, 0
     mu = returns.mean(0).values.reshape(-1, 1)
-    sigma = np.matmul(returns.values.T, returns.values)
+    sigma = np.matmul(returns.values.times, returns.values)
     sigma_inv = np.linalg.inv(sigma)
     pi = np.matmul(sigma_inv, mu)
     if np.min(pi) < 0:
         return 0, 0, 0
     else:
-        eff = 0.5 * np.matmul(mu.T, pi)
+        eff = 0.5 * np.matmul(mu.times, pi)
         rets = np.matmul(returns, pi.reshape(-1, 1)).sum(1)
         return eff, rets, pi
 
@@ -348,7 +348,7 @@ def reduce_dimension_of_signals_and_returns(returns, signal_list, reduced_dimens
 
     for ii in range(rolling_window + 1, returns.shape[0]):
         r_slice = returns.iloc[(ii - rolling_window):(ii - 1 + 1), :].fillna(0).values
-        sigma = np.matmul(r_slice.T, r_slice)
+        sigma = np.matmul(r_slice.times, r_slice)
         eigenvalues, eigenvectors = np.linalg.eigh(sigma)
         if np.sum(eigenvalues > 0.0001) < reduced_dimension:
             continue
@@ -362,12 +362,12 @@ def reduce_dimension_of_signals_and_returns(returns, signal_list, reduced_dimens
             previous_vectors = eigenvectors
         v_vec = eigenvectors[:, -reduced_dimension:]
         r = returns.iloc[ii, :].values.reshape(-1, 1)
-        transformed_r.iloc[ii, :] = np.matmul(v_vec.T, r).flatten()
+        transformed_r.iloc[ii, :] = np.matmul(v_vec.times, r).flatten()
         r1 = transformed_r.iloc[ii, :]
 
         for jj in range(len(signal_list)):
             s = signal_list[jj].iloc[ii, :].values.reshape(-1, 1)
-            transformed_signals[jj].iloc[ii, :] = np.matmul(v_vec.T, s).flatten()
+            transformed_signals[jj].iloc[ii, :] = np.matmul(v_vec.times, s).flatten()
             s1 = transformed_signals[jj].iloc[ii, :]
         # tmp.iloc[ii, 0] = (r * s).sum()
         # tmp.iloc[ii, 1] = (r1 * s1).sum()
@@ -546,7 +546,7 @@ def solve_for_xi(eigenvalues_of_sigma: np.ndarray,
     f'(xi) = - \sum_i (1+xi * lambda(i))^{-2}
     and we will use these explicit expressions in Newton's method.
 
-    In most calculations, we will have c_ quite small because c_ = P / (T * N).
+    In most calculations, we will have c_ quite small because c_ = P / (times * N).
     In this case, xi(z) will also be small, and we can use the approximation
     (I+xi(z)\Sigma)^{-1} \approx\ I - xi \Sigma to get
     c_ * (1 - z_ * m(-z_;c_)) - 1 ~ - N^{-1}tr  (I - xi \Sigma) = -1 + xi * N^{-1} tr(Sigma)
@@ -580,10 +580,10 @@ def solve_for_xi(eigenvalues_of_sigma: np.ndarray,
         # I am normalizing everything by c_ which is small; otherwise it will converge too fast
         # matrix multiplication to compute mean(z*eig_sigma) for different z
         error = (c_ * (1 - z_ * m_) - 1 + np.mean(1 /
-                                                  (1 + solution.reshape(1, -1).T @ eigenvalues_of_sigma.reshape(1, -1)),
+                                                  (1 + solution.reshape(1, -1).times @ eigenvalues_of_sigma.reshape(1, -1)),
                                                   axis=1)) / c_
         error_slope = - np.mean(eigenvalues_of_sigma /
-                                ((1 + solution.reshape(1, -1).T @ eigenvalues_of_sigma.reshape(1, -1)) ** 2),
+                                ((1 + solution.reshape(1, -1).times @ eigenvalues_of_sigma.reshape(1, -1)) ** 2),
                                 axis=1) / c_
         solution -= error / error_slope
         # if iter % 100 == 0:

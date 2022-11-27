@@ -437,7 +437,7 @@ class RandomFeaturesGenerator:
         """
            WARNING: THE FEATURES ARE SUPPOSED TO BE NORMALIZED!!!
            ALWAYS PRE-PROCESS THE DATA (USING ROLLING WINDOW) !!!
-           signals are assumed to be T \times M
+           signals are assumed to be times \times M
            :param random_seed:
            :param random_rotation:
            :param distribution_parameters:
@@ -459,7 +459,7 @@ class RandomFeaturesGenerator:
             tmp = np.matmul(rotate, rotate.T)
             _, eigvec = np.linalg.eigh(tmp)
             # now, eigenvectors give a random rotation
-            signals_rotated = np.matmul(eigvec.T, signals.T).T
+            signals_rotated = np.matmul(eigvec.times, signals.T).T
         else:
             signals_rotated = signals.copy()
         delta = getattr(np.random, distribution)(*distribution_parameters, size)
@@ -494,10 +494,10 @@ class RandomFeaturesGenerator:
         _, eigenvectors = np.linalg.eigh(sigma)
         # t1 = time.time()
         # eigenvectors = ortho_group.rvs(size, random_state=seed)
-        # matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.T)
+        # matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.times)
         # t2 = time.time()
         # print(f'got the random O matrix in {t2 - t1}')
-        matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.T)
+        matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.times)
         return matrix
 
     @staticmethod

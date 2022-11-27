@@ -5,62 +5,6 @@ from helpers.random_features import RandomFeatures
 import matplotlib.pyplot as plt
 
 
-def great(x: int) -> int:
-    """
-
-    :param x: ineteger
-    :return: another integer, x^2
-    """
-    return x ** 2
-
-
-def simulate_data(seed: int,
-                  sample_size: int,
-                  number_features_: int,
-                  beta_and_psi_link_: float,
-                  noise_size_: float,
-                  activation_: str = 'linear',
-                  number_neurons_: int = 1
-                  ):
-    """
-    this function simulates potentially highly non-linear data on which we will be testing
-    our RMT stuff
-
-    :param number_neurons_: we generate data y = \sum_{i=1}^K activation(features * beta + noise)
-    each summand is a neuron. K = number_neurons #Mohammad: How are we summing this stuff? so we use different random
-    activation functions of the same class?
-    :param activation_: type of non-linearity  #Mohammad: Do we need to specify parameters for the functions we use?
-    :param sample_size: sample size
-    :param number_features_: number_features #Mohammad: Low dimensional features? That can become high dimensional
-    through our activation functions
-    :param beta_and_psi_link_: how eigenvalues of Sigma_beta and Psi are related #Mohammad: This the crucial
-    parameter for our feature importance application
-
-    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)
-
-    :param noise_size_: size of noise
-    :return: labels and features. Labels are noisy and potentially non-linear functions of features
-    """
-    np.random.seed(seed)
-    psi_eigenvalues = np.abs(np.random.uniform(0.01, 1, [1, number_features_]))
-    features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
-
-    # should also divide by P to ensure bounded trace norm
-    beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)
-    # we should also experiment with non-monotonic links
-
-    labels_ = np.zeros([sample_size, 1])
-    beta_dict = dict()
-    for neuron in range(number_neurons_):
-        betas = np.random.randn(number_features_, 1) * (beta_eigenvalues ** 0.5).reshape(-1, 1)
-        noise = np.random.randn(sample_size, 1) * noise_size_
-
-        labels_ \
-            += RandomFeaturesGenerator.apply_activation_to_multiplied_signals(
-                                                                    multiplied_signals=features @ betas + noise,
-                                                                    activation=activation_)
-        beta_dict[neuron] = betas
-    return labels_, features, beta_dict, psi_eigenvalues
 
 
 def run_experiment(seed: int,
@@ -71,9 +15,7 @@ def run_experiment(seed: int,
                    shrinkage_list: list,
                    activation_: str = 'linear',
                    number_neurons_: int = 1,
-                   use_random_features: bool = False,
-
-                   ):
+                   use_random_features: bool = False):
     """
 
     :param shrinkage_list:
@@ -157,12 +99,15 @@ if __name__ == '__main__':
     """
     activation = 'linear'
     number_neurons = 1
+    shrinkage_list = np.linspace(0.1, 10, 100)
+
 
     seed = 0
     run_experiment(seed=seed,
-                   full_sample_size=full_sample_size,
-                   number_features=number_features,
-                   number_neurons=number_neurons,
-                   activation=activation,
+                   sample_size=full_sample_size,
+                   shrinkage_list=shrinkage_list,
+                   number_features_=number_features,
+                   number_neurons_=number_neurons,
+                   activation_=activation,
                    noise_size=noise_size,
                    beta_and_psi_link=beta_and_psi_link)

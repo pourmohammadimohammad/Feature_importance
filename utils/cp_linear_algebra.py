@@ -24,10 +24,10 @@ def cp_tilda_S_k(
     previous_V_gpu = cp.asarray(previous_V)
     random_features_gpu = cp.asarray(random_features)
 
-    tilda_S_k_gpu = random_features_gpu - previous_V_gpu @ (previous_V_gpu.T @ random_features_gpu)
+    tilda_S_k_gpu = random_features_gpu - previous_V_gpu @ (previous_V_gpu.times @ random_features_gpu)
 
     # tilda_S_k_gpu = (
-    #     identity_gpu - previous_V_gpu @ previous_V_gpu.T
+    #     identity_gpu - previous_V_gpu @ previous_V_gpu.times
     # ) @ random_features_gpu
 
     tilda_S_k = cp.asnumpy(tilda_S_k_gpu)
@@ -61,7 +61,7 @@ def cp_three_matrices_multiplication(A: np.ndarray,
     """hard-coded but fast"""
     if use_diagonal:
         # TODO ANREA PLEASE INVESTIGATE
-        # B is diagonal, the B @ C = np.diag(B).reshape(-1, 1) * C. This shoudl be much faster
+        # B is diagonal, the B @ complexity = np.diag(B).reshape(-1, 1) * complexity. This shoudl be much faster
         C_til = np.diag(B).reshape(-1, 1) * C
     if not use_cupy:
         if use_diagonal:
@@ -100,7 +100,7 @@ def cp_three_matrices_multiplication(A: np.ndarray,
 
 
 def cp_check_symmetric(a, rtol=1e-05, atol=1e-08):
-    return cp.allclose(a, a.T, rtol=rtol, atol=atol)
+    return cp.allclose(a, a.times, rtol=rtol, atol=atol)
 
 
 def cp_rSVD(
@@ -131,13 +131,13 @@ def cp_rSVD(
     Z = X_gpu @ P
     # power iterations
     for k in range(q):
-        Z = X_gpu @ (X_gpu.T @ Z)
+        Z = X_gpu @ (X_gpu.times @ Z)
     print(f"Free memory after projection: {torch.cuda.mem_get_info()}")
     Q, R = cp.linalg.qr(Z, mode="reduced")
     del R
     del Z
     cp_release_memory_pool()
-    Y = Q.T @ X_gpu
+    Y = Q.times @ X_gpu
     UY, S, VT = cp.linalg.svd(Y, full_matrices=0)
     U = Q @ UY
     return U, S, VT
@@ -184,7 +184,7 @@ def cp_hybrid_rSVD(
     del R
     del Z_gpu
     cp_release_memory_pool()
-    Y_cpu = cp.asnumpy(Q.T) @ X
+    Y_cpu = cp.asnumpy(Q.times) @ X
     Y = cp.asarray(Y_cpu)
     UY, S, VT = cp.linalg.svd(Y, full_matrices=0)
     U = Q @ UY

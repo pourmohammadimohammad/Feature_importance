@@ -18,7 +18,7 @@ def fast_matmul(A, B, C):
     bpg = cuda.gridDim.x  # blocks per grid
 
     if x >= C.shape[0] and y >= C.shape[1]:
-        # Quit if (x, y) is outside of valid C boundary
+        # Quit if (x, y) is outside of valid complexity boundary
         return
 
     # Each thread computes one element in the result matrix.

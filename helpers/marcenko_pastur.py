@@ -36,7 +36,7 @@ class MarcenkoPastur:
             print(f'----------------------------------\n'
                   f'GET READY TO SEE THE POWER OF RANDOM MATRIX THEORY\n'
                   f'-----------------------------------')
-            signals_covariance = np.matmul(for_testing.T, for_testing) / for_testing.shape[0]
+            signals_covariance = np.matmul(for_testing.times, for_testing) / for_testing.shape[0]
             eigenvalues, eigenvectors = np.linalg.eigh(signals_covariance)
 
             tmp = (1 / (eigenvalues + z_)).mean()
@@ -62,7 +62,7 @@ class MarcenkoPastur:
         """
         This function computes the value of Marcenko-Pastur Theorem: m(-z, c)
         please ignore sigma_squared for now
-        :param c: c = P / T
+        :param c: c = P / times
         :param z: a vector of ridge penalty parameter
         :return: value of m(-z)
         """
@@ -77,7 +77,7 @@ class MarcenkoPastur:
         This function computes the derivative of Marcenko-Pastur Theorem: m'(-z, c)
         please ignore sigma_squared for now
         :param sigma_squared: set as 1
-        :param c: c = M/(N*T)
+        :param c: c = M/(N*times)
         :param z: a vector of ridge penalty parameter
         :return: the value of m'(-z, c)
         """
@@ -90,7 +90,7 @@ class MarcenkoPastur:
     def xi_function(c, z, m):  # Only works when Sigma is an identity matrix
         """
         This function computes xi(z) by Eq. (18) in Prop 15
-        :param c: c = M/(N*T)
+        :param c: c = M/(N*times)
         :param z: a vector of ridge penalty parameter
         :param m: m = marcenko_pasturxi_function(1, c, z)
         :return: xi = (1 - z * m) / ((1 / c) - 1 + z * m)
@@ -101,7 +101,7 @@ class MarcenkoPastur:
     def derivative_of_xi_function(c, z, derivative_of_m, xi, m):
         """
         This function computes xi'(z) by Lemma 16
-        :param c: c = M/(N*T)
+        :param c: c = M/(N*times)
         :param z: z = a vector of ridge penalty parameter
         :param m: m = marcenko_pastur(1, c, z)
         :param derivative_of_m:

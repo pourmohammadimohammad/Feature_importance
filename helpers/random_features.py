@@ -239,8 +239,8 @@ class RandomFeatures:
                 mult = 1.
             else:
                 mult = 0.0001
-            multiplied_signals = self.add_bias(multiplied_signals.T, bias_distribution='uniform',
-                                               bias_distribution_parameters=[- mult * np.pi, mult * np.pi]).T
+            multiplied_signals = self.add_bias(multiplied_signals.times, bias_distribution='uniform',
+                                               bias_distribution_parameters=[- mult * np.pi, mult * np.pi]).times
             random_features = self.apply_activation_to_multiplied_signals(multiplied_signals, activation)
 
         else:
@@ -305,10 +305,10 @@ class RandomFeatures:
             # TODO careful here: in add_bias, signals MUST BE P TIMES N
             # todo this was a major bug. when incorrectly applied (along wrong dimension), it means that
             # the bias will be different in- and out-of-sample, breaking predictability !!!!
-            multiplied_signals = self.add_bias(multiplied_signals.T,
+            multiplied_signals = self.add_bias(multiplied_signals.times,
                                                bias_distribution,
                                                bias_distribution_parameters,
-                                               seed=len(partitions)).T
+                                               seed=len(partitions)).times
         final_random_features = self.apply_activation_to_multiplied_signals(multiplied_signals, activation)
         return final_random_features
 
@@ -364,8 +364,8 @@ class RandomFeatures:
                                                   seed=seed) * gamma
             multiplied_signals = raw_signals @ weights
             # note the transpose before and after, somehow add bias
-            multiplied_signals = self.add_bias(multiplied_signals.T, bias_distribution='uniform',
-                                               bias_distribution_parameters=uniform_bias_interval).T
+            multiplied_signals = self.add_bias(multiplied_signals.times, bias_distribution='uniform',
+                                               bias_distribution_parameters=uniform_bias_interval).times
             random_features = self.apply_activation_to_multiplied_signals(multiplied_signals, activation)
 
         else:
@@ -377,7 +377,7 @@ class RandomFeatures:
         """
         We use theoretical values from random matrix theory to compute optimal weight
         in_sample_signals are assumed to be n \times P.
-        So that their covariance matrix is np.matmul(in_sample_signals.T, in_sample_signals)
+        So that their covariance matrix is np.matmul(in_sample_signals.times, in_sample_signals)
         Parameters
         ----------
         in_sample_signals :
@@ -395,7 +395,7 @@ class RandomFeatures:
         z_ = np.array(shrinkage_list).reshape(-1, 1)  # vertical
 
         if in_sample_signals.shape[0] < in_sample_signals.shape[1]:
-            data = in_sample_signals.T
+            data = in_sample_signals.times
         else:
             data = in_sample_signals
 
@@ -577,7 +577,7 @@ class RandomFeatures:
         nu, nu_hat, nu_prime = RandomFeatures.all_the_different_nu_functions(psi_star, xi, xi_prime, z_, c_)
         function = (1 + residual_bstar) * (z_ * xi) - (bstar / c_) * (z_ ** 2) * xi
         diff = (function - function.T)
-        divisor = (z_ - z_.T)
+        divisor = (z_ - z_.times)
         divisor[divisor == 0] = np.inf
         diff = diff / divisor
         diff += bstar * psi_star  # every single element of the matrix must be added bstar * psi_star
@@ -605,10 +605,10 @@ class RandomFeatures:
 
         # now we invert the matrix to get optimal_weights w=\Gamma^{-1}\gamma, according to the notation in the paper
         inverted = np.linalg.inv(diff)
-        optimal_weights = np.matmul(inverted, bstar * nu.T)
+        optimal_weights = np.matmul(inverted, bstar * nu.times)
 
         # this is the theoretical expected return on the portfolio
-        ce_portfolio = (bstar * nu.T * optimal_weights).sum()
+        ce_portfolio = (bstar * nu.times * optimal_weights).sum()
 
         # this is the theoretical risk of the portfolio
         cl_portfolio = float(optimal_weights.T @ (diff @ optimal_weights))  # (this is gamma'Gamma^{-1} gamma
@@ -767,10 +767,10 @@ class RandomFeatures:
         _, eigenvectors = np.linalg.eigh(sigma)
         # t1 = time.time()
         # eigenvectors = ortho_group.rvs(size, random_state=seed)
-        # matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.T)
+        # matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.times)
         # t2 = time.time()
         # print(f'got the random O matrix in {t2 - t1}')
-        matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.T)
+        matrix = eigenvectors @ (np.diag(eigenvalues) @ eigenvectors.times)
         return matrix
 
     @staticmethod
@@ -791,7 +791,7 @@ class RandomFeatures:
                                          shrinkage_list):
 
         normalized = np.concatenate(
-            [np.matmul((1 / (eigval + z)).reshape(-1, 1) * eigvec.T, signals_mu) for z in shrinkage_list], axis=1)
+            [np.matmul((1 / (eigval + z)).reshape(-1, 1) * eigvec.times, signals_mu) for z in shrinkage_list], axis=1)
         # here it is subtle as the dimension of eigvec might be lower than that of beta !!!
         # but normalized has the right dimension !!
         inverses_signals_mu = np.matmul(eigvec, normalized)
@@ -879,17 +879,17 @@ class RandomFeatures:
 
         # if test fixed kappa, we need to shrink the RHS data referring to kappas
         if test_fixed_kappa:
-            data_for_covariance_shrinkage = data_for_covariance.mean(0).reshape(-1, 1).T * fixed_kappas[
+            data_for_covariance_shrinkage = data_for_covariance.mean(0).reshape(-1, 1).times * fixed_kappas[
                 4]  # kappa 5, will use this to shrink future signals as well
             data_for_covariance = data_for_covariance - data_for_covariance_shrinkage
-            data_for_covariance_mean = data_for_covariance.mean(0).reshape(-1, 1).T
+            data_for_covariance_mean = data_for_covariance.mean(0).reshape(-1, 1).times
 
             if large_covariance:
-                data_for_covariance = data_for_covariance.T
-                data_for_covariance_mean = data_for_covariance_mean.T
+                data_for_covariance = data_for_covariance.times
+                data_for_covariance_mean = data_for_covariance_mean.times
 
             ### KAPPA TIME! kappa 1
-            covariance = np.matmul((data_for_covariance - data_for_covariance_mean * fixed_kappas[0]).T,
+            covariance = np.matmul((data_for_covariance - data_for_covariance_mean * fixed_kappas[0]).times,
                                    data_for_covariance - data_for_covariance_mean * fixed_kappas[0]) / signals.shape[0]
             # signals.shape[0] is the number of observations
             eigval, eigvec1 = np.linalg.eigh(covariance)
@@ -898,8 +898,8 @@ class RandomFeatures:
             if len(eigval) == 0:
                 breakpoint()
             if not large_covariance:
-                data_for_covariance_mean = data_for_covariance_mean.T
-            return large_covariance, eigvec1, eigval, data_for_covariance, data_for_covariance_mean.T, data_for_covariance_shrinkage, mu, labels_mu
+                data_for_covariance_mean = data_for_covariance_mean.times
+            return large_covariance, eigvec1, eigval, data_for_covariance, data_for_covariance_mean.times, data_for_covariance_shrinkage, mu, labels_mu
 
         else:
             if large_covariance:
@@ -945,7 +945,7 @@ class RandomFeatures:
         output = {'norm_of_beta': norm_of_beta,
                   'predictions': predictions}
         if return_in_sample_pred:
-            output['in_sample_predictions'] = np.matmul(betas, signals.T).T
+            output['in_sample_predictions'] = np.matmul(betas, signals.times).T
         if return_beta:
             output['betas'] = betas
         if compute_smart_weights:
@@ -1077,7 +1077,7 @@ class RandomFeatures:
         cl_portfolio = np.array([everything[i][4] for i in range(len(all_the_bstar))])
         cl_from_paper = np.concatenate([cl_from_paper.reshape(1, -1), cl_portfolio.reshape(1, -1)], axis=1)
 
-        optimal_betas = (betas.T @ optimal_weights).T  # this is the optimal combination of betas
+        optimal_betas = (betas.T @ optimal_weights).times  # this is the optimal combination of betas
         betas = np.concatenate([betas, optimal_betas], axis=0)
         return betas, all_the_bstar, ce_from_paper, cl_from_paper
 
@@ -1088,9 +1088,9 @@ class RandomFeatures:
                            number_random_features: int,
                            normalize_p: bool = False):
         sample_size = psi_matrix.shape[0]
-        covariance = psi_matrix / (sample_size * (number_random_features if normalize_p else 1))  # this is SS'/(P * T)
+        covariance = psi_matrix / (sample_size * (number_random_features if normalize_p else 1))  # this is SS'/(P * times)
 
-        # this is T \times T
+        # this is times \times times
         # signals.shape[0] is the number of observations
         eigval, eigvec1 = np.linalg.eigh(covariance)
 
@@ -1107,9 +1107,9 @@ class RandomFeatures:
 
         eigvec1 = eigvec1[:, eigval > 10 ** (-10)]
         eigval = eigval[eigval > 10 ** (-10)]
-        # now eigvec1 is a bit smaller, T \times T1 for some T1<T
+        # now eigvec1 is a bit smaller, times \times T1 for some T1<times
 
-        multiplied = (1 / eigval).reshape(-1, 1) * (eigvec1.T @ (covariance @ labels))
+        multiplied = (1 / eigval).reshape(-1, 1) * (eigvec1.times @ (covariance @ labels))
         # this vector is now T1 \times 1
 
         normalized = np.concatenate([(1 / (eigval + z)).reshape(-1, 1) * multiplied for z in shrinkage_list], axis=1)
@@ -1118,10 +1118,10 @@ class RandomFeatures:
         # here it is subtle as the dimension of eigvec might be lower than that of beta !!!
         # but normalized has the right dimension !!
         q_vector = eigvec1 @ normalized
-        # this is (T \times T1) \times (T1 \times len(shrinkage))  which should give T \times len(shrinkage)
+        # this is (times \times T1) \times (T1 \times len(shrinkage))  which should give times \times len(shrinkage)
 
         if len(eigval.tolist()) < number_random_features:
-            # the true psi matrix is P \times P/ If P>T, then it will have zeros
+            # the true psi matrix is P \times P/ If P>times, then it will have zeros
             eigval = np.array(eigval.tolist() + [0] * (number_random_features - len(eigval.tolist())))
         else:
             # otherwise the first number_random_features - len(psi_hat_eig.tolist()) eigenvalues are identically zero
@@ -1158,7 +1158,7 @@ class RandomFeatures:
             indicator = date_ids.flatten() == date
             features_per_date = random_features[indicator, :]  # first select date, then stocks in that date
             # the code assumes stock_ids are ordered conditional on a given date
-            sigma_matr = sigma_matr + features_per_date @ features_per_date.T
+            sigma_matr = sigma_matr + features_per_date @ features_per_date.times
         return sigma_matr
 
     @staticmethod
@@ -1263,7 +1263,7 @@ class RandomFeatures:
             if test_mode:
                 random_features_all.append(random_features)
 
-            psi_matrix += random_features @ random_features.T
+            psi_matrix += random_features @ random_features.times
 
             if do_ranking_before_full_panel:
                 sigma_matr = RandomFeatures.update_sigma_matr(sigma_matr,
@@ -1396,7 +1396,7 @@ class RandomFeatures:
             #                                                         random_weights,
             #                                                         date_ids,
             #                                                         ranking)
-            # this is supposed to be T \times P1
+            # this is supposed to be times \times P1
 
             rft = RandomFeaturesTesting(raw_signals=pd.DataFrame(future_raw_signals),
                                         returns=pd.DataFrame(np.zeros(shape=(future_raw_signals.shape[0], 1))),
@@ -1415,19 +1415,19 @@ class RandomFeatures:
             if test:
                 future_random_features_all.append(future_random_features)
 
-            # q_vector is T \times len(shrinkage_list)
-            # random_features is T \times P1
+            # q_vector is times \times len(shrinkage_list)
+            # random_features is times \times P1
             # hence beta_chunk \in \R^{P_1\times len(shrinkage_list)}
             # so the betas for the chunk will only matter for a model with hih enough complexity
             # hence the condition key >= block_sizes[block + 1]
-            beta_chunks = {key: random_features.T @ voc_curve['q_vectors'][key]
+            beta_chunks = {key: random_features.times @ voc_curve['q_vectors'][key]
                                 / (random_features.shape[0] * (np.sqrt(key) if normalize_p else 1))
                            for key in voc_curve['q_vectors'] if key >= block_sizes[block + 1]}
 
             # same here: only stuff with high complexity, if key >= block_sizes[block + 1], gets updated
             realized_in_sample_returns.update(
                 {key: realized_in_sample_returns[key]
-                      + (beta_chunks[key].T @ random_features.T @ labels / (np.sqrt(key) if normalize_p else 1)).T
+                      + (beta_chunks[key].times @ random_features.times @ labels / (np.sqrt(key) if normalize_p else 1)).T
                  for key in realized_in_sample_returns if
                  key >= block_sizes[block + 1]})
             future_predictions.update(
@@ -1444,8 +1444,8 @@ class RandomFeatures:
 
         realized_in_sample_returns = {key: realized_in_sample_returns[key]
                                            / number_dates for key in realized_in_sample_returns}
-        # here we divide by T, because the estimator of b_star_hat_in_sample
-        # is designed to take stuff normalized by T
+        # here we divide by times, because the estimator of b_star_hat_in_sample
+        # is designed to take stuff normalized by times
         if produce_betas:
             betas = {key: np.concatenate(betas[key], axis=0) for key in betas.keys()}
 
@@ -1487,7 +1487,7 @@ class RandomFeatures:
         :param random_features_parameters_activation_function:
         :param random_features_parameters_distribution_bias:
         :param random_features_parameters_distribution_bias_parameters:
-        :return: a T*N by Z matrix of predictions.
+        :return: a times*N by Z matrix of predictions.
         """
         # creating random_features_dict_parameters as a function
         if random_features_parameters_gamma is None:
@@ -1501,7 +1501,7 @@ class RandomFeatures:
                                            'bias_distribution': random_features_parameters_distribution_bias,
                                            'bias_distribution_parameters': random_features_parameters_distribution_bias_parameters}
 
-        # q_vector \in R^{T\times len(shrinkage_list)}
+        # q_vector \in R^{times\times len(shrinkage_list)}
         # but psi_hat_eig have lots of missing zeros. We should add them
         # here it is very impotant that we re-build the same seeds !!!!
         np.random.seed(seed)  # hence we re-initiate the seed
@@ -1540,12 +1540,12 @@ class RandomFeatures:
                 future_random_features = rank_features_cross_sectionally(future_random_features,
                                                                          future_date_ids,
                                                                          ranking)
-            # q_vector is T \times len(shrinkage_list)
-            # random_features is T \times P1
+            # q_vector is times \times len(shrinkage_list)
+            # random_features is times \times P1
             # hence beta_chunk \in \R^{P_1\times len(shrinkage_list)}
             # so the betas for the chunk will only matter for a model with hih enough complexity
             # hence the condition key >= block_sizes[block + 1]
-            # beta_chunks = {key: random_features.T @ voc_curve['q_vectors'][key]
+            # beta_chunks = {key: random_features.times @ voc_curve['q_vectors'][key]
             #                     / (random_features.shape[0] * (np.sqrt(key) if normalize_p else 1))
             #                for key in voc_curve['q_vectors'] if key >= block_sizes[block + 1]}
 
@@ -1724,7 +1724,7 @@ class RandomFeatures:
             voc_curve['sigma_eig'] = {number_random_features: sigma_hat_eig}
             voc_curve['q_vectors'] = {number_random_features: q_vector}
 
-        # q_vector \in R^{T\times len(shrinkage_list)}
+        # q_vector \in R^{times\times len(shrinkage_list)}
         # but psi_hat_eig have lots of missing zeros. We should add them
 
         number_dates = len(np.unique(date_ids))
@@ -1820,8 +1820,8 @@ class RandomFeatures:
         """
         WARNING: I AM ASSUMING THAT SIGNALS ARE ALREADY SHIFTED RELATIVE TO RETURNS
         SO THAT WE ARE TRADING R * S
-        signals are assumed to be T \times M
-        (in the machine learning jargon, T = N, M =P )
+        signals are assumed to be times \times M
+        (in the machine learning jargon, times = N, M =P )
 
         We would like to invert A'A+shrinkage *I
         But this is too costly.
@@ -1945,7 +1945,7 @@ class RandomFeatures:
         else:
             norm_of_beta = 0
 
-        # this is (1/T) \sum_t \beta' S_t R_t
+        # this is (1/times) \sum_t \beta' S_t R_t
         # it is needed for random matrix theory
         in_sample_means = betas @ mu.reshape(-1, 1)
 
@@ -1986,7 +1986,7 @@ class RandomFeatures:
         if test_fixed_kappas:
             predictions = fixed_kappas[2] * labels_mu + \
                           np.matmul(betas, fixed_kappas[3] * data_for_covariance_mean + \
-                                    future_signals.T - data_for_covariance_shrinkage.T).T
+                                    future_signals.T - data_for_covariance_shrinkage.times).T
         elif test_changing_kappas:
             inverses_signal_mult_mu = RandomFeatures.produce_inverses_signals_mult_mu(signals_mu, eigvec, eigval,
                                                                                       shrinkage_list)  ## inverse_mult_signal_mu
@@ -1996,7 +1996,7 @@ class RandomFeatures:
                                                                                                labels_mu,
                                                                                                betas, shrinkage_list)
             predictions = (kappa3 * labels_mu + np.matmul(betas + kappa2 * inverses_signal_mult_mu.T * labels_mu,
-                                                          future_signals.T)).T  # dim = (# of z) * 1
+                                                          future_signals.T)).times  # dim = (# of z) * 1
         else:
             predictions = np.matmul(betas, future_signals.T).T
 
@@ -2406,7 +2406,7 @@ class RandomFeatures:
         """
            WARNING: THE FEATURES ARE SUPPOSED TO BE NORMALIZED!!!
            ALWAYS PRE-PROCESS THE DATA (USING ROLLING WINDOW) !!!
-           signals are assumed to be T \times M
+           signals are assumed to be times \times M
            :param random_seed:
            :param random_rotation:
            :param distribution_parameters:
@@ -2427,7 +2427,7 @@ class RandomFeatures:
             tmp = np.matmul(rotate, rotate.T)
             _, eigvec = np.linalg.eigh(tmp)
             # now, eigenvectors give a random rotation
-            signals_rotated = np.matmul(eigvec.T, signals.T).T
+            signals_rotated = np.matmul(eigvec.times, signals.T).T
         else:
             signals_rotated = signals.copy()
         delta = getattr(np.random, distribution)(*distribution_parameters, size)
@@ -3030,7 +3030,7 @@ if __name__ == '__main__':
     #     future_signals=random_features,
     #     shrinkage_list=shrinkage_list,
     #     return_beta=True)
-    # print(f"The beta from ridge_regression_single_underlying is \n {res_old_func['betas'].T}")
+    # print(f"The beta from ridge_regression_single_underlying is \n {res_old_func['betas'].times}")
 
     # my test
     seed = 1

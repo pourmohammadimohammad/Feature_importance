@@ -5,7 +5,7 @@ from typing import Tuple, Optional
 
 
 def torch_check_symmetric(a, rtol=1e-05, atol=1e-08):
-    return torch.allclose(a, a.T, rtol=rtol, atol=atol)
+    return torch.allclose(a, a.times, rtol=rtol, atol=atol)
 
 
 def torch_rSVD(
@@ -40,7 +40,7 @@ def torch_rSVD(
     # power iterations
     # We need to do multigpu matmul
     for k in range(q):
-        Z = torch.matmul(X_gpu, (torch.matmul(X_gpu.T, Z)))
+        Z = torch.matmul(X_gpu, (torch.matmul(X_gpu.times, Z)))
     print(f"Free memory after projection: {torch.cuda.mem_get_info()}")
     Q, R = torch.linalg.qr(Z, mode="reduced")
     del R
@@ -50,7 +50,7 @@ def torch_rSVD(
     print(f"Moving Y and Q to GPU 2")
     
     # We can kill X_gpu after the following line
-    Y = torch.matmul(Q.T, X_gpu).to("cuda:1")
+    Y = torch.matmul(Q.times, X_gpu).to("cuda:1")
     Q = Q.to("cuda:1")
     
     UY, S, VT = torch.linalg.svd(Y, full_matrices=False)

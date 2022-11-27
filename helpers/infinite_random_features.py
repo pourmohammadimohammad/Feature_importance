@@ -64,7 +64,7 @@ def build_the_q_vector(
             sample_size * (number_random_features if normalize_p else 1)
     )
 
-    # this is T \times T
+    # this is times \times times
     # signals.shape[0] is the number of observations
     if gpu:
 
@@ -106,10 +106,10 @@ def build_the_q_vector(
     eigval = eigval[eigval > 10 ** (-10)]
 
     logging.info(f"Selected Eigval: {len(eigval)}")
-    # now eigvec1 is a bit smaller, T \times T1 for some T1<T
+    # now eigvec1 is a bit smaller, times \times T1 for some T1<times
 
     # so here we could potentially do many columns in the y_train
-    # multiplied = (1 / eigval).reshape(-1, 1) * (eigvec1.T @ (covariance @ y_train))
+    # multiplied = (1 / eigval).reshape(-1, 1) * (eigvec1.times @ (covariance @ y_train))
     # this is a calculation from the paper:
     # (S'S+zI)^{-1}S'y=S'Q where
     # Q = V(D+zI)^{-1} multiplied
@@ -117,7 +117,7 @@ def build_the_q_vector(
     # multiplied = D^{-1} V' covariance y=V'y
     # this vector is now T1 \times number_label_columns (if we have 1-hot encoding)
     # note however that this calculation can be significantly simplified:
-    multiplied = eigvec1.T @ y_train  # number_eigenvalues \times 1
+    multiplied = eigvec1.times @ y_train  # number_eigenvalues \times 1
 
     # here it is subtle as the dimension of eigvec might be lower than that of beta !!!
     # but normalized has the right dimension !!
@@ -141,8 +141,8 @@ def build_the_q_vector(
 
     else:
 
-        # this is (T \times T1) \times (T1 \times len(shrinkage))
-        # which should give T \times len(shrinkage)
+        # this is (times \times T1) \times (T1 \times len(shrinkage))
+        # which should give times \times len(shrinkage)
 
         normalized = np.concatenate(
             [
@@ -151,12 +151,12 @@ def build_the_q_vector(
             ],
             axis=1,
         )
-        # eignevc1 is T \times num_eigenvalues
+        # eignevc1 is times \times num_eigenvalues
         q_vector = [eigvec1 @ normalized]
 
     len_eigenval = len(eigval.tolist())
     if len_eigenval < number_random_features:
-        # the true psi matrix is P \times P/ If P>T, then it will have zeros
+        # the true psi matrix is P \times P/ If P>times, then it will have zeros
         eigval = np.array(
             eigval.tolist() + [0] * (number_random_features - len_eigenval)
         )
@@ -455,20 +455,20 @@ def compute_betas_and_predictions(
 
         if test:
             future_random_features_all.append(random_features['test'])
-        # q_vector is T \times len(shrinkage_list)
-        # random_features is T \times P1
+        # q_vector is times \times len(shrinkage_list)
+        # random_features is times \times P1
         # hence beta_chunk \in \R^{P_1\times len(shrinkage_list)}
         # so the betas for the chunk will only matter for a model with hih enough complexity
         # hence the condition key >= block_sizes[block + 1]
 
         start = time.monotonic()
 
-        # below we are dividing betas by T = test_and_train['train'].shape[0]
-        # this is not a glitch: it is necessary because we need to do (z+S'S/T)^{-1}S'y/T
+        # below we are dividing betas by times = test_and_train['train'].shape[0]
+        # this is not a glitch: it is necessary because we need to do (z+S'S/times)^{-1}S'y/times
 
         beta_chunks = {
             (key, i): (
-                    random_features['train'].T
+                    random_features['train'].times
                     @ voc_curve["q_vectors"][key][i]
                     / (test_and_train['train'].shape[0] * np.sqrt(key if normalize_p else 1))
             )
@@ -502,11 +502,11 @@ def compute_betas_and_predictions(
         #     {
         #         (key, i): realized_in_sample_returns[key]
         #         + (
-        #             beta_chunks[key, i].T
-        #             @ random_features.T
+        #             beta_chunks[key, i].times
+        #             @ random_features.times
         #             @ y_train
         #             / np.sqrt(key if normalize_p else 1)
-        #         ).T
+        #         ).times
         #         for key in realized_in_sample_returns
         #         if key >= block_sizes[block + 1]
         #         for i in range(number_labels)
@@ -544,8 +544,8 @@ def compute_betas_and_predictions(
     #     for i in range(number_labels)
     # }
 
-    # here we divide by T, because the estimator of b_star_hat_in_sample
-    # is designed to take stuff normalized by T
+    # here we divide by times, because the estimator of b_star_hat_in_sample
+    # is designed to take stuff normalized by times
     if produce_betas:
         betas = {
             (key, i): np.concatenate(betas[key, i], axis=0)
@@ -591,7 +591,7 @@ def compute_strategy_returns_for_giant_msrr(
                                ) * ret_slices[key].values[:, ii].reshape(-1, 1)
                            for key in ['test', 'train']
                            }
-        beta_chunks = random_features['train'].T @ q_vector[0] \
+        beta_chunks = random_features['train'].times @ q_vector[0] \
                       / (sig_slices['train'][ticker].shape[0]
                          * np.sqrt(number_features_per_ticker if normalize_p else 1))
         # so, in fact beta chunks are the actual portfolio weights of the managed portfolio
@@ -764,7 +764,7 @@ def ridge_regression_with_giant_number_of_random_features(
         f"Psi time: {(end_psi_matrix - start_psi_matrix):.3f}s \t RF: {number_random_features} \t P': {small_subset_size}"
     )
     if not produce_voc_curve:
-        # q_vector \in R^{T\times len(shrinkage_list)}
+        # q_vector \in R^{times\times len(shrinkage_list)}
         # but psi_hat_eig have lots of missing zeros. We should add them
         y_train_to_use = np.ones([psi_matrix.shape[0], 1]) if msrr else y_train
         q_vector, psi_hat_eig = build_the_q_vector(
@@ -863,7 +863,7 @@ def test_giant_to_compare_with_standard_ridge(run_linear_model,
                         z * np.eye(number_random_features)
                         + true_psi_matr / sample_size / number_random_features
                     )
-                    @ (random_features.T / np.sqrt(number_random_features))
+                    @ (random_features.times / np.sqrt(number_random_features))
                     @ y_train
                     for z in shrinkage_list
                 ],
@@ -1001,7 +1001,7 @@ def produce_the_first_q_vector_for_zero_block(
                     V_0
                     @ (
                             (1 / (tilda_D + z)).reshape(-1, 1)
-                            * (V_0.T @ y_train[:, i].reshape(-1, 1))
+                            * (V_0.times @ y_train[:, i].reshape(-1, 1))
                     )
                     for z in shrinkage_list
                 ],
@@ -1013,7 +1013,7 @@ def produce_the_first_q_vector_for_zero_block(
         y_train = y_train.reshape(-1, 1)
         q_vector = np.concatenate(
             [
-                V_0 @ ((1 / (tilda_D + z)).reshape(-1, 1) * (V_0.T @ y_train))
+                V_0 @ ((1 / (tilda_D + z)).reshape(-1, 1) * (V_0.times @ y_train))
                 for z in shrinkage_list
             ],
             axis=1,
@@ -1066,7 +1066,7 @@ def mathematical_q_vector_computation(
     else:
 
         if is_multiclass:
-            # V_k has \nu columns, T rows; diagonal is \nu \times \nu
+            # V_k has \nu columns, times rows; diagonal is \nu \times \nu
             q_vector = [
                 np.concatenate(
                     [
@@ -1096,7 +1096,7 @@ def mathematical_q_vector_computation(
 
     # q_vector = np.concatenate(
     #     [
-    #         V_k @ np.diag(1 / (lambda_k + z)) @ V_k.T @ y_train
+    #         V_k @ np.diag(1 / (lambda_k + z)) @ V_k.times @ y_train
     #         for z in shrinkage_list
     #     ],
     #     axis=1,
@@ -1123,7 +1123,7 @@ def produce_q_vector_for_nonzero_block(
         eigens,
 ):
     start_full_block = time.monotonic()
-    # should be T x min(niu, P)
+    # should be times x min(niu, P)
     previous_V = Vs[block - 1]
     previous_d = eigens[block - 1]
 
@@ -1137,11 +1137,11 @@ def produce_q_vector_for_nonzero_block(
     # **************************
 
     # \Xi_k = D_{k-1} + V'_{k-1} S_k S'_k V_{k-1}
-    # V is T \times min(T,(nu + p1)). So it can be T\times T for small T
+    # V is times \times min(times,(nu + p1)). So it can be times\times times for small times
     start_xi = time.monotonic()
 
-    pre_multiplied = random_features.T @ previous_V
-    Xi = previous_D + pre_multiplied.T @ pre_multiplied
+    pre_multiplied = random_features.times @ previous_V
+    Xi = previous_D + pre_multiplied.times @ pre_multiplied
 
     end_xi = time.monotonic()
     xi_time = end_xi - start_xi
@@ -1175,11 +1175,11 @@ def produce_q_vector_for_nonzero_block(
     if gpu:
         tilda_S_k = cp_tilda_S_k(sample_size, previous_V, random_features)
     else:
-        # random_features are T \times P_1;
-        # previous_V is T \times \nu
-        tilda_S_k = random_features - previous_V @ (previous_V.T @ random_features)
+        # random_features are times \times P_1;
+        # previous_V is times \times \nu
+        tilda_S_k = random_features - previous_V @ (previous_V.times @ random_features)
         # tilda_S_k = (
-        #     np.eye(sample_size) - previous_V @ previous_V.T
+        #     np.eye(sample_size) - previous_V @ previous_V.times
         # ) @ random_features
     end = time.monotonic()
     tilda_S_k_time = end - start
@@ -1230,7 +1230,7 @@ def produce_q_vector_for_nonzero_block(
     sorting_time = end_sort - start_sort
     logging.info(f"Sorting time: {sorting_time:.3f}")
 
-    hat_V_k = np.vstack([x[1].T for x in sorted_eigens]).T
+    hat_V_k = np.vstack([x[1].times for x in sorted_eigens]).T
     hat_lambda_k = np.array([x[0] for x in sorted_eigens])
 
     # Induction Step
@@ -1255,11 +1255,11 @@ def produce_q_vector_for_nonzero_block(
     # can take 10s for sample_size=42k and nu=600
     # ******************
     start = time.monotonic()
-    # matrix multiplication is associative, i.e. (AB)C = A(BC)
+    # matrix multiplication is associative, i.e. (AB)complexity = A(BC)
     diagonals = [np.diag(1 / (lambda_k + z)) for z in shrinkage_list]
     if not is_multiclass:
         y_train = y_train.reshape(-1, 1)
-    V_k_T_y_train = V_k.T @ y_train
+    V_k_T_y_train = V_k.times @ y_train
 
     q_vector = mathematical_q_vector_computation(
         gpu, is_multiclass, V_k, diagonals, V_k_T_y_train
@@ -1340,7 +1340,7 @@ def process_one_block_of_features(
     p_1 = block_sizes[block + 1] - block_sizes[block]
 
     # 1. Generate Random Features
-    # Should be T x P_1
+    # Should be times x P_1
     random_features = RandomFeaturesGenerator.generate_random_features_from_list_with_potential_ranking(
         seed=int((seed + 1) * 1e3) + block + 1,
         msrr=msrr,
@@ -1352,7 +1352,7 @@ def process_one_block_of_features(
         X_train=X_train
     )
 
-    # Divide them by T^1/2
+    # Divide them by times^1/2
     random_features = random_features / np.sqrt(sample_size)
     is_multiclass = len(y_train.shape) > 1 and y_train.shape[1] > 1
     y_train_to_use = np.ones([random_features.shape[0], 1]) if msrr else y_train
@@ -1575,8 +1575,8 @@ def run_giant_spectral_or_not_depending_on_size(slice_: dict,
     print(f'running next slice with {slice_["X_train"].shape[0]} sample size')
 
     if slice_['X_train'].shape[0] < giant_with_spectral_threshold or factor_msrr:
-        # if factor_msrr, then the actual data we regress is small (T \times number of features;
-        # unless we go to HFT, T is small and hence no need to use random_features_regression_giant_spectral_method)
+        # if factor_msrr, then the actual data we regress is small (times \times number of features;
+        # unless we go to HFT, times is small and hence no need to use random_features_regression_giant_spectral_method)
         # if train sample is small, we can do simple stuff
         return ridge_regression_with_giant_number_of_random_features(**slice_)
     else:
@@ -1750,7 +1750,7 @@ def giant_msrr(seed: int,
     # if test_mode:
     #     random_features = np.concatenate(random_features_all, axis=1)
     #     # Covariance matrix
-    #     true_psi_matr = random_features.T @ random_features
+    #     true_psi_matr = random_features.times @ random_features
     # else:
     #     true_psi_matr = None
     #     random_features = None

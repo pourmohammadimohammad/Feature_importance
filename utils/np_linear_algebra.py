@@ -4,7 +4,7 @@ from typing import Tuple
 
 
 def check_symmetric(a, rtol=1e-05, atol=1e-08):
-    return np.allclose(a, a.T, rtol=rtol, atol=atol)
+    return np.allclose(a, a.times, rtol=rtol, atol=atol)
 
 
 def rSVD(
@@ -32,7 +32,7 @@ def rSVD(
     print(Z.shape)
     Q, R = np.linalg.qr(Z, mode="reduced")
 
-    Y = Q.T @ X
+    Y = Q.times @ X
 
     UY, S, VT = np.linalg.svd(Y, full_matrices=0)
     U = Q @ UY
