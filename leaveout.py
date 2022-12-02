@@ -1,3 +1,5 @@
+from typing import List, Any
+
 import numpy
 import numpy as np
 import pandas as pd
@@ -8,12 +10,24 @@ from helpers.random_features import RandomFeatures
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from helpers.marcenko_pastur import MarcenkoPastur
+from parameters import *
 
 
 # mohammad_is_wrong = RandomFeatures.naive_linear_single_underlying()
 
-class leave_out:
+class LeaveOut:
+
     def __init__(self, t, c):
+        self.times = None
+        self.labels_oos_list = None
+        self.estimator_out_of_sample_cumulative = None
+        self.features_oos_list = None
+        self.true_value_beta_eq_176 = None
+        self.true_value_sigma_beta_eq_176 = None
+        self.true_value_limit_eq_176 = None
+        self.mean_true = None
+        self.xi = None
+        self.beta_eigenvalues = None
         self.true_value_mean = None
         self.true_value_var = None
         self.estimator_oos = None
@@ -38,20 +52,25 @@ class leave_out:
         self.number_neurons = 1
         self.shrinkage_list = np.linspace(0.1, 10, 100)
         self.t = t
+        self.c = c
         self.p = int(c * t)
+        self.simple_beta = False
 
-    def simulate_date(self):
-        labels, features, beta_dict, psi_eigenvalues = self.simulate_data(seed=self.seed,
-                                                                          sample_size=self.t,
-                                                                          number_features_=self.p,
-                                                                          beta_and_psi_link_=self.beta_and_psi_link,
-                                                                          noise_size_=self.noise_size,
-                                                                          activation_=self.activation,
-                                                                          number_neurons_=self.number_neurons)
+    def simulate_date(self, simple_beta=False):
+        self.simple_beta = simple_beta
+        labels, features, beta_dict, psi_eigenvalues, beta_eigenvalues = self.simulate_data(seed=self.seed,
+                                                                                            sample_size=self.t,
+                                                                                            number_features_=self.p,
+                                                                                            beta_and_psi_link_=self.beta_and_psi_link,
+                                                                                            noise_size_=self.noise_size,
+                                                                                            activation_=self.activation,
+                                                                                            number_neurons_=self.number_neurons,
+                                                                                            simple_beta=self.simple_beta)
         self.labels = labels
         self.features = features
         self.beta_dict = beta_dict
         self.psi_eigenvalues = psi_eigenvalues
+        self.beta_eigenvalues = beta_eigenvalues
 
     def train_test_split(self, train_frac):
         self.train_frac = train_frac
@@ -63,6 +82,19 @@ class leave_out:
         self.features_ins = self.features[:split, :]
         self.features_oos = self.features[split:, :]
 
+    def test_parse_split(self, num_parts):
+        oos_length = self.features_oos.shape[0]
+        parts_frac = [0]
+        parts_frac.extend(oos_length * np.linspace(1, num_parts, num_parts)/num_parts)
+        oos_list_features = []
+        oos_list_labels = []
+        parts_frac = [int(parts_frac[i]) for i in range(len(parts_frac))]
+        [oos_list_features.append(self.features_oos[parts_frac[i]:parts_frac[i + 1]]) for i in
+         range(num_parts)]
+        [oos_list_labels.append(self.labels_oos[int(parts_frac[i]):int(parts_frac[i + 1])]) for i in range(num_parts)]
+        self.times = parts_frac[1:]
+        self.features_oos_list = oos_list_features
+        self.labels_oos_list = oos_list_labels
 
     def train_model(self):
         self.eigenvalues, self.eigenvectors = self.smart_eigenvalue_decomposition(self.features_ins)
@@ -82,20 +114,76 @@ class leave_out:
                                                                               shrinkage_list=self.shrinkage_list)
         return self.performance_ins
 
-    def oos_performance(self):
+    def oos_performance(self, features_oos=None,labels_oos=None):
+        features_oos = self.features_oos if features_oos is None else features_oos
+        labels_oos = self.labels_oos if labels_oos is None else labels_oos
+
         self.estimator_oos = self.performance_oos(beta_hat=self.beta_hat,
-                                                  labels_out_of_sample=self.labels_oos,
-                                                  features_out_of_sample=self.features_oos)
+                                                  labels_out_of_sample=labels_oos,
+                                                  features_out_of_sample=features_oos)
         return self.estimator_oos
 
+    def oos_performance_growing_sample(self, num_parts=4):
+        self.test_parse_split(num_parts)
+        estimator_out_of_sample = []
+        [estimator_out_of_sample.append(LeaveOut.oos_performance(self, self.features_oos_list[i],self.labels_oos_list[i]))
+         for i in range(len(self.features_oos_list))]
+        estimator_out_of_sample_cumulative = {}
+        for name in estimator_out_of_sample[0].keys():
+            estimator_out_of_sample_cumulative[name] = []
+            for i in range(len(self.features_oos_list)):
+                estimator_out_of_sample_cumulative[name].append(np.array(estimator_out_of_sample[i][name]))
+                if i != 0:
+                    estimator_out_of_sample_cumulative[name][i] = estimator_out_of_sample_cumulative[name][i - 1] + \
+                                                                  np.array(estimator_out_of_sample[i][name])
+            estimator_out_of_sample_cumulative[name] = [estimator_out_of_sample_cumulative[name][i] / (i + 1)
+                                                        for i in range(len(self.features_oos_list))]
+
+        self.estimator_out_of_sample_cumulative = estimator_out_of_sample_cumulative
+        return estimator_out_of_sample_cumulative
+
     def calculate_true_value(self):
-        self.true_value_mean = leave_out.leave_one_out_true_value(beta_dict=self.beta_dict,
-                                                                                       psi_eigenvalues=self.psi_eigenvalues,
-                                                                                       eigenvalues=self.eigenvalues,
-                                                                                       eigenvectors=self.eigenvectors,
-                                                                                       shrinkage_list=self.shrinkage_list,
-                                                                                       noise_size_=self.noise_size)
+        self.true_value_mean = LeaveOut.leave_one_out_true_value(beta_dict=self.beta_dict,
+                                                                 psi_eigenvalues=self.psi_eigenvalues,
+                                                                 eigenvalues=self.eigenvalues,
+                                                                 eigenvectors=self.eigenvectors,
+                                                                 shrinkage_list=self.shrinkage_list,
+                                                                 noise_size_=self.noise_size)
         return self.true_value_mean
+
+    def theoretical_mean(self):
+
+        xi = LeaveOut.xi_beta_k_true(l=1,
+                                     c=self.c,
+                                     psi_eigenvalues=self.psi_eigenvalues,
+                                     beta_eigenvalues=self.beta_eigenvalues,
+                                     shrinkage_list=self.shrinkage_list)
+
+        self.xi = xi
+        mean_true = [np.sum(self.beta_eigenvalues * self.psi_eigenvalues) - self.shrinkage_list[i] * xi[i] for i in
+                     range(len(self.shrinkage_list))]
+        self.mean_true = mean_true
+
+        return mean_true
+
+    def True_value_eq_176(self, data_type):
+
+        if data_type == DataUsed.INS:
+            data = self.features_ins
+        if data_type == DataUsed.OOS:
+            data = self.features_oos
+        if data_type == DataUsed.TOTAL:
+            data = self.features
+
+        [T, P] = data.shape
+        covariance = data.T @ data / T
+        inverse = [np.linalg.pinv(covariance + z * np.eye(P)) for z in self.shrinkage_list]
+        true_value_sigma_beta_eq_176 = [np.trace(self.beta_eigenvalues * (self.psi_eigenvalues * i) @ covariance) for i
+                                        in inverse]
+        true_value_beta_eq_176 = [(self.beta_dict[0].reshape(1, -1) @ (self.psi_eigenvalues * i) @ covariance @
+                                   self.beta_dict[0].reshape(-1, 1))[0] for i in inverse]
+        self.true_value_sigma_beta_eq_176 = true_value_sigma_beta_eq_176
+        self.true_value_beta_eq_176 = true_value_beta_eq_176
 
     @staticmethod
     def smart_eigenvalue_decomposition(features: np.ndarray,
@@ -231,22 +319,22 @@ class leave_out:
         """
         labels_squared = np.mean(labels ** 2)
 
-        w_diag = leave_out.smart_w_diag(features=features,
-                                        eigenvalues=eigenvalues,
-                                        eigenvectors=eigenvectors,
-                                        shrinkage_list=shrinkage_list)
+        w_diag = LeaveOut.smart_w_diag(features=features,
+                                       eigenvalues=eigenvalues,
+                                       eigenvectors=eigenvectors,
+                                       shrinkage_list=shrinkage_list)
 
-        pi = leave_out.compute_pi_t_tau_with_beta_hat(labels=labels,
-                                                      features=features,
-                                                      beta_hat=beta_hat,
-                                                      w_diag=w_diag,
-                                                      shrinkage_list=shrinkage_list)
+        pi = LeaveOut.compute_pi_t_tau_with_beta_hat(labels=labels,
+                                                     features=features,
+                                                     beta_hat=beta_hat,
+                                                     w_diag=w_diag,
+                                                     shrinkage_list=shrinkage_list)
 
         # now, we compute R_{tau+1}(z) * pi_{times,tau} as a vector. The list is indexed by z while the vector is indexed by tau
         estimator_list = [labels * pi[i] for i in range(len(shrinkage_list))]
 
         # Calculate strategy performance using insample dat
-        estimator_perf = leave_out.estimator_performance(estimator_list, pi, labels_squared)
+        estimator_perf = LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
 
         # do an average over all pi_T_tau do get the \hat \pi estimator
         pi_avg = [np.mean(p) for p in pi]
@@ -283,7 +371,7 @@ class leave_out:
         pi = [features_out_of_sample @ b for b in beta_hat]
         estimator_list = [p * labels_out_of_sample for p in pi]
 
-        return leave_out.estimator_performance(estimator_list, pi, labels_squared)
+        return LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
 
     @staticmethod
     def compute_pi_t_tau_with_beta_hat(labels,
@@ -335,7 +423,8 @@ class leave_out:
                       beta_and_psi_link_: float,
                       noise_size_: float,
                       activation_: str = 'linear',
-                      number_neurons_: int = 1
+                      number_neurons_: int = 1,
+                      simple_beta: bool = False
                       ):
         """
         this function simulates potentially highly non-linear data on which we will be testing
@@ -356,26 +445,32 @@ class leave_out:
         :param noise_size_: size of noise
         :return: labels and features. Labels are noisy and potentially non-linear functions of features
         """
-        np.random.seed(seed)
+        np.random.seed(100)
         psi_eigenvalues = np.abs(np.random.uniform(0.01, 1, [1, number_features_]))
-        features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
 
-        # should also divide by P to ensure bounded trace norm
-        beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / np.sqrt(number_features_)
         # we should also experiment with non-monotonic links
+        if simple_beta:
+            beta_eigenvalues = np.ones([1, number_features_]) / number_features_
+        else:
+            beta_eigenvalues = psi_eigenvalues ** beta_and_psi_link_ / number_features_
 
-        labels_ = np.zeros([sample_size, 1])
         beta_dict = dict()
         for neuron in range(number_neurons_):
             betas = np.random.randn(number_features_, 1) * (beta_eigenvalues ** 0.5).reshape(-1, 1)
-            noise = np.random.randn(sample_size, 1) * noise_size_
+            beta_dict[neuron] = betas
 
+        np.random.seed(seed)
+        features = np.random.randn(sample_size, number_features_) * (psi_eigenvalues ** 0.5)
+
+        labels_ = np.zeros([sample_size, 1])
+        for neuron in range(number_neurons_):
+            noise = np.random.randn(sample_size, 1) * noise_size_
             labels_ \
                 += RandomFeaturesGenerator.apply_activation_to_multiplied_signals(
                 multiplied_signals=features @ betas + noise,
                 activation=activation_)
-            beta_dict[neuron] = betas
-        return labels_, features, beta_dict, psi_eigenvalues
+
+        return labels_, features, beta_dict, psi_eigenvalues, beta_eigenvalues
 
     @staticmethod
     def leave_one_out_true_value(beta_dict: np.ndarray,
@@ -451,3 +546,37 @@ class leave_out:
         # true_values_std = [np.sqrt(t) for t in true_values_std]
 
         return true_values_mean
+
+    @staticmethod
+    def xi_beta_k_true(c: float,
+                       l: int,
+                       beta_eigenvalues: np.ndarray,
+                       psi_eigenvalues: np.ndarray,
+                       shrinkage_list: np.ndarray):
+        """
+        Efficient way to estimate \beta \Psi (\hat \Psi + zI)^{-1} \Psi \beta
+        :param beta_dict: beta paramaters (ground truth)
+        :param psi_eigenvalues: True eigenvalues of covariance matrix
+        :param shrinkage_list:
+        :param T: Sample size
+        :return:
+        """
+
+        # m_z_c = MarcenkoPastur.marcenko_pastur(c,shrinkage_list)
+        # denominator = 1/(1-c+c*shrinkage_list*m_z_c)
+        # params = [ denominator[i]*shrinkage_list[i] for i in range(len(shrinkage_list))]
+        #
+        # inverse_eigen_values = [(psi_eigenvalues ** l)/(psi_eigenvalues+p) for p  in params]
+        #
+        # xi = [np.trace(beta_eigenvalues*inverse_eigen_values[i])*denominator[i] for i in range(len(shrinkage_list))]
+
+        m_z_c = MarcenkoPastur.marcenko_pastur(c, shrinkage_list)
+        denominator = 1 / (1 - c + c * shrinkage_list * m_z_c)
+        params = [denominator[i] * shrinkage_list[i] for i in range(len(shrinkage_list))]
+
+        inverse_eigen_values = [(psi_eigenvalues ** l) / (psi_eigenvalues + p) for p in params]
+
+        xi = [np.sum(beta_eigenvalues * inverse_eigen_values[i]) * denominator[i] for i in
+              range(len(shrinkage_list))]
+
+        return xi

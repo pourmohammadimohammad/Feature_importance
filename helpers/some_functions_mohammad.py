@@ -1,7 +1,7 @@
 import numpy
 import numpy as np
 import pandas as pd
-from leave_out import *
+from leaveout import *
 from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
@@ -86,7 +86,7 @@ def leave_one_out_dumb(labels: np.ndarray,
     # now, we compute R_{tau+1}(z) * pi_{times,tau} as a vector. The list is indexed by z while the vector is indexed by tau
     estimator_list = [labels * pi[i] for i in range(len(shrinkage_list))]
 
-    estimator_perf = leave_out.estimator_performance(estimator_list, pi, labels_squared)
+    estimator_perf = LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
     return estimator_perf
 
 def leave_one_out_estimator_performance(labels: np.ndarray,
@@ -106,10 +106,10 @@ def leave_one_out_estimator_performance(labels: np.ndarray,
     """
     labels_squared = np.mean(labels ** 2)
 
-    w_matrix = leave_out.smart_w_matrix(features=features,
-                       eigenvalues=eigenvalues,
-                       eigenvectors=eigenvectors,
-                       shrinkage_list=shrinkage_list)
+    w_matrix = LeaveOut.smart_w_matrix(features=features,
+                                       eigenvalues=eigenvalues,
+                                       eigenvectors=eigenvectors,
+                                       shrinkage_list=shrinkage_list)
 
     pi = compute_pi_t_tau(w_mat=w_matrix,
                           shrinkage_list=shrinkage_list,
@@ -118,7 +118,7 @@ def leave_one_out_estimator_performance(labels: np.ndarray,
     # now, we compute R_{tau+1}(z) * pi_{times,tau} as a vector. The list is indexed by z while the vector is indexed by tau
     estimator_list = [labels * pi[i] for i in range(len(shrinkage_list))]
 
-    estimator_perf = leave_out.estimator_performance(estimator_list, pi, labels_squared)
+    estimator_perf = LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
 
     return estimator_perf
 

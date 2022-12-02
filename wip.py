@@ -1,13 +1,14 @@
 import numpy
 import numpy as np
 import pandas as pd
-from leave_out import *
+from leaveout import *
 from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from helpers.marcenko_pastur import MarcenkoPastur
+from parameters import *
 
 
 # mohammad_is_wrong = RandomFeatures.naive_linear_single_underlying()
@@ -49,10 +50,10 @@ def leave_two_out_estimator_vectorized_resolvent(labels: np.ndarray,
     :return: Unbiased estimator
     """
 
-    W = leave_out.smart_w_matrix(features=features,
-                                 eigenvalues=eigenvalues,
-                                 eigenvectors=eigenvectors,
-                                 shrinkage_list=shrinkage_list)
+    W = LeaveOut.smart_w_matrix(features=features,
+                                eigenvalues=eigenvalues,
+                                eigenvectors=eigenvectors,
+                                shrinkage_list=shrinkage_list)
 
     T = np.shape(features)[0]
 
@@ -105,7 +106,7 @@ def estimate_mean_leave_two_out(labels: np.ndarray,
                                                                   eigenvalues,
                                                                   eigenvectors,
                                                                   shrinkage_list)
-    m_list = leave_out.empirical_stieltjes(eigenvalues, P, shrinkage_list)
+    m_list = LeaveOut.empirical_stieltjes(eigenvalues, P, shrinkage_list)
     mean_estimator = [(1 - c + c * shrinkage_list[i] * m_list[i]) * estimator_list[i] for i in
                       range(len(shrinkage_list))]
 
@@ -118,10 +119,11 @@ def run_loo(t: int,
             seed: int = None,
             beta_and_psi_link: float = None,
             shrinkage_list: list = None,
-            true_values: bool = False) -> object:
+            simple_beta: bool = False,
+            growing_oos: bool = False) -> object:
     seed = 0 if seed is None else seed
 
-    lo_est = leave_out(t, c)
+    lo_est = LeaveOut(t, c)
     lo_est.seed = seed
 
     beta_and_psi_link = lo_est.beta_and_psi_link if beta_and_psi_link is None else beta_and_psi_link
@@ -129,13 +131,15 @@ def run_loo(t: int,
 
     lo_est.beta_and_psi_link = beta_and_psi_link
     lo_est.shrinkage_list = shrinkage_list
-    lo_est.simulate_date()
+    lo_est.simulate_date(simple_beta=simple_beta)
     lo_est.train_test_split(train_frac)
     lo_est.train_model()
     estimator_in_sample = lo_est.ins_performance()
-    estimator_out_of_sample = lo_est.oos_performance()
-    if true_values:
-        lo_est.calculate_true_value()
+
+    if not growing_oos:
+        estimator_out_of_sample = lo_est.oos_performance()
+    else:
+        estimator_out_of_sample = lo_est.oos_performance_growing_sample()
 
     return estimator_in_sample, estimator_out_of_sample, lo_est
 
@@ -153,115 +157,248 @@ def plot_sub_plots(estimators, shrinkage_list, ax_legend, c, plot_name):
             ax[a_0, a_1].set_title(f'T = {times[i]}')
 
         ax[0, 0].legend(ax_legend, loc='upper right')
-        fig.text(0.5, 0.04, 'Shrinkage Size', ha='center', fontsize=12)
-        fig.suptitle(name.upper() + ' ' + plot_name + f" \n  Complexity = {c}", fontsize=12)
+        fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+        fig.suptitle(name.upper() + ' ' + plot_name + f" \n  c = {c}", fontsize=12)
         plt.show()
 
 
-if __name__ == '__main__':
-    # testing leave one out:
-    # times = [100, 500, 1000, 2500]
-    # complexity = [0.1, 0.5, 1, 2, 5, 10]
-    times = [10, 50, 100, 250]
-    complexity = [0.2, 5]
-    train_frac = 0.5
-    shrinkage_list = np.linspace(0.1, 10, 100)
-    beta_and_psi_link = 2
-    seeds = list(range(0, 10))
+def plot_sub_plots_mean(estimators, shrinkage_list, ax_legend, c, train_frac):
+    times = list(estimators.keys())
+    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+    for i in range(len(times)):
+        a_0 = i % 2
+        a_1 = int((i - a_0) / 2) % 2
+        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j])
+         for j in range(len(estimators[times[i]]))]
 
-    #
-    # # ins vs oos
-    # ax_legend = []
-    # [ax_legend.extend([f'Complexity = {c} INS', f'Complexity = {c} OOS']) for c in complexity]
-    #
-    # estimators_oos = {}
-    # for i in range(len(times)):
-    #     estimators_oos[times[i]] = []
-    #     [estimators_oos[times[i]].append(run_loo(t=times[i],
-    #                                          c=c,
-    #                                          train_frac=train_frac,
-    #                                          beta_and_psi_link=beta_and_psi_link,
-    #                                          shrinkage_list=shrinkage_list)[0:2]) for c in complexity]
-    #
-    # for name in estimators_oos[times[0]][0][0].keys():
-    #     fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
-    #     for i in range(len(times)):
-    #         a_0 = i % 2
-    #         a_1 = int((i - a_0) / 2) % 2
-    #         [ax[a_0, a_1].plot(shrinkage_list, estimators_oos[times[i]][j][0][name])
-    #         for j in range(len(complexity))]
-    #
-    #         [ax[a_0, a_1].plot(shrinkage_list, estimators_oos[times[i]][j][1][name])
-    #         for j in range(len(complexity))]
-    #
-    #         ax[a_0, a_1].set_title(f'T = {times[i]}')
-    #
-    #
-    #     ax[0, 0].legend(ax_legend, loc='upper right')
-    #     fig.text(0.5, 0.04, 'Shrinkage Size', ha='center', fontsize=12)
-    #     fig.suptitle(name.upper() + f" \n  beta-psi link= {beta_and_psi_link}", fontsize=12)
-    #     plt.show()
+        ax[a_0, a_1].set_title(f'T = {times[i]}')
 
-    # OOS across seeds
+    ax[0, 0].legend(ax_legend, loc='upper right')
+    fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+    fig.suptitle(' Mean' + f" \n  c = {c} \n train fraction = {train_frac} ", fontsize=12)
+    plt.show()
 
+
+def plot_sub_plots_ins_vs_oos(estimators, estimators_oos, shrinkage_list, ax_legend, c, train_frac, plot_name):
+    times = list(estimators.keys())
+    num_seeds = len(estimators[times[0]])
+    for name in estimators[times[0]][0].keys():
+        fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+        for i in range(len(times)):
+            a_0 = i % 2
+            a_1 = int((i - a_0) / 2) % 2
+            [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j][name])
+             for j in range(num_seeds)]
+
+            [ax[a_0, a_1].plot(shrinkage_list, estimators_oos[times[i]][j][name])
+             for j in range(num_seeds)]
+            ax[a_0, a_1].set_title(f'T = {times[i]}')
+
+        ax[0, 0].legend(ax_legend, loc='upper right')
+        fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+        fig.suptitle(name.upper() + ' ' + plot_name + f" \n  c = {c} \n train fraction = {train_frac} ", fontsize=12)
+        plt.show()
+
+
+def plot_unconditionally(estimators_oos, estimators_ins, true_values, shrinkage_list, c, times,
+                         name='mean'):
+    avg_perf_OOS = {}
+    avg_perf_INS = {}
+    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+    for i in range(len(times)):
+
+        avg_perf_OOS[times[i]] = np.zeros(len(estimators_oos[times[i]][0][name]))
+        avg_perf_INS[times[i]] = np.zeros(len(estimators_ins[times[i]][0][name]))
+        for j in range(len(seeds)):
+            avg_perf_OOS[times[i]] = avg_perf_OOS[times[i]] + np.array(estimators_oos[times[i]][j][name]) / len(seeds)
+            avg_perf_INS[times[i]] = avg_perf_INS[times[i]] + np.array(estimators_ins[times[i]][j][name]) / len(seeds)
+
+        a_0 = i % 2
+        a_1 = int((i - a_0) / 2) % 2
+
+        ax[a_0, a_1].plot(shrinkage_list, true_values[times[i]])
+        ax[a_0, a_1].plot(shrinkage_list, avg_perf_OOS[times[i]])
+        ax[a_0, a_1].plot(shrinkage_list, avg_perf_INS[times[i]])
+        ax[a_0, a_1].set_title(f'T = {times[i]}')
+
+    ax[0, 0].legend([' INS ', ' OOS ', 'Theoretical '], loc='upper right')
+    fig.suptitle(f'c = {c}')
+    fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+    plt.show()
+
+
+def expanding_window_experment(t: int,
+                               c: float,
+                               train_frac: float,
+                               beta_and_psi_link: float,
+                               shrinkage_list: np.ndarray,
+                               seeds: list):
+    estimators_oos = []
+    estimated_values_saved = []
+    [estimated_values_saved.append(run_loo(t=t,
+                                           c=c,
+                                           train_frac=train_frac,
+                                           beta_and_psi_link=beta_and_psi_link,
+                                           shrinkage_list=shrinkage_list,
+                                           seed=s,
+                                           growing_oos=True)) for s in seeds]
+    [estimators_oos.append(estimated_values_saved[j][1]) for j in range(len(seeds))]
+    # true_values = estimated_values_saved[0][2].theoretical_mean()
     ax_legend = []
     [ax_legend.append(f'Seed {s}') for s in seeds]
-    c = 5
+    name = 'mean'
+    times = estimated_values_saved[0][2].times
+    num_seeds = len(estimators_oos)
+    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+    for i in range(len(times)):
+        a_0 = i % 2
+        a_1 = int((i - a_0) / 2) % 2
+        [ax[a_0, a_1].plot(shrinkage_list, estimators_oos[j][name][i])
+         for j in range(num_seeds)]
+
+        ax[a_0, a_1].set_title(f'T_1 = {times[i]}')
+
+    ax[0, 0].legend(ax_legend, loc='upper right')
+    fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+    fig.suptitle(name.upper() + ' Out of Sample', fontsize=12)
+    plt.show()
+
+    return estimators_oos
+
+
+def ins_vs_oos_experiment(times: list,
+                          complexity: list,
+                          train_frac: float,
+                          beta_and_psi_link: float,
+                          shrinkage_list: np.ndarray):
+    ax_legend = []
+    [ax_legend.extend([f'Complexity = {c} INS', f'Complexity = {c} OOS']) for c in complexity]
+
+    estimators = {}
+    for i in range(len(times)):
+        estimators[times[i]] = []
+        [estimators[times[i]].append(run_loo(t=times[i],
+                                             c=c,
+                                             train_frac=train_frac,
+                                             beta_and_psi_link=beta_and_psi_link,
+                                             shrinkage_list=shrinkage_list)[0:2]) for c in complexity]
+
+    for name in estimators[times[0]][0][0].keys():
+        fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+        for i in range(len(times)):
+            a_0 = i % 2
+            a_1 = int((i - a_0) / 2) % 2
+            [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j][0][name])
+             for j in range(len(complexity))]
+
+            [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j][1][name])
+             for j in range(len(complexity))]
+
+            ax[a_0, a_1].set_title(f'T = {times[i]}')
+
+        ax[0, 0].legend(ax_legend, loc='upper right')
+        fig.text(0.5, 0.04, 'Shrinkage Size', ha='center', fontsize=12)
+        fig.suptitle(name.upper() + f" \n  beta-psi link= {beta_and_psi_link}", fontsize=12)
+        plt.show()
+        return estimators
+
+
+def complete_comparison_experiment(t: int,
+                                   c: float,
+                                   train_frac: float,
+                                   beta_and_psi_link: float,
+                                   shrinkage_list: np.ndarray):
+    mean_dict = {}
+    ins, oos, loo = run_loo(t=t, c=c,
+                            train_frac=train_frac,
+                            beta_and_psi_link=beta_and_psi_link,
+                            shrinkage_list=shrinkage_list,
+                            simple_beta=True)
+
+    mean_dict['INS'] = ins['mean']
+    mean_dict['OOS'] = oos['mean']
+
+    mean_dict['Theoretical'] = loo.theoretical_mean()
+
+    loo.True_value_eq_176(DataUsed.INS)
+    mean_dict['eq 176 INS'] = loo.true_value_sigma_beta_eq_176
+    mean_dict['eq 176 limit INS'] = loo.true_value_beta_eq_176
+
+    loo.True_value_eq_176(DataUsed.OOS)
+    mean_dict['eq 176 OOS'] = loo.true_value_sigma_beta_eq_176
+    mean_dict['eq 176 limit OOS'] = loo.true_value_beta_eq_176
+
+    return
+
+
+def simulate_across_seeds(t: int,
+                          c: float,
+                          train_frac: float,
+                          beta_and_psi_link: float,
+                          shrinkage_list: np.ndarray,
+                          seeds: list):
+    estimators_oos = []
+    estimators_ins = []
+    estimated_values_saved = []
+    [estimated_values_saved.append(run_loo(t=t, c=c, train_frac=train_frac,
+                                           beta_and_psi_link=beta_and_psi_link,
+                                           shrinkage_list=shrinkage_list,
+                                           seed=s,
+                                           simple_beta=True)) for s in seeds]
+    [estimators_ins.append(estimated_values_saved[j][0]) for j in range(len(seeds))]
+    [estimators_oos.append(estimated_values_saved[j][1]) for j in range(len(seeds))]
+    true_values = estimated_values_saved[0][2].theoretical_mean()
+
+    return estimators_ins, estimators_oos, true_values
+
+
+def across_seeds_experiment(times: list,
+                            c: float,
+                            train_frac: float,
+                            beta_and_psi_link: float,
+                            shrinkage_list: np.ndarray,
+                            seeds: list):
     estimators_oos = {}
     estimators_ins = {}
     true_values = {}
-    for i in range(len(times)):
-        estimators_oos[times[i]] = []
-        estimators_ins[times[i]] = []
-        true_values[times[i]] = []
-        estimated_values_saved = []
-        [estimated_values_saved.append(run_loo(t=times[i], c=c, train_frac=train_frac,
-                                               beta_and_psi_link=beta_and_psi_link,
-                                               shrinkage_list=shrinkage_list,
-                                               seed=s,
-                                               true_values=True)) for s in seeds]
-        [estimators_ins[times[i]].append(estimated_values_saved[j][0]) for j in range(len(seeds))]
-        [estimators_oos[times[i]].append(estimated_values_saved[j][1]) for j in range(len(seeds))]
-        [true_values[times[i]].append(estimated_values_saved[j][2].true_value_mean) for j in range(len(seeds))]
+
+    for t in times:
+        estimators_oos[t], estimators_ins[t], true_values[t] = simulate_across_seeds(t,
+                                                                                     c,
+                                                                                     train_frac,
+                                                                                     beta_and_psi_link,
+                                                                                     shrinkage_list,
+                                                                                     seeds)
+    seeds_legend =[]
+    [seeds_legend.append(f'seed {s}') for s in seeds]
+
+    plot_unconditionally(estimators_oos=estimators_oos,
+                         estimators_ins=estimators_ins,
+                         true_values=true_values,
+                         shrinkage_list=shrinkage_list,
+                         c=c)
 
     plot_sub_plots(estimators=estimators_oos,
                    shrinkage_list=shrinkage_list,
-                   ax_legend=ax_legend,
+                   ax_legend=seeds_legend,
                    c=c,
                    plot_name='Out of Sample')
 
     plot_sub_plots(estimators=estimators_ins,
                    shrinkage_list=shrinkage_list,
-                   ax_legend=ax_legend,
+                   ax_legend=seeds_legend,
                    c=c,
                    plot_name='In Sample')
 
-    # compare with true value
 
-    name = 'mean'
-    avg_perf_OOS = {}
-    avg_perf_INS = {}
-    avg_true_value = {}
-    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
-    for i in range(len(times)):
-        a_0 = i % 2
-        a_1 = int((i - a_0) / 2) % 2
-        avg_perf_OOS[times[i]] = np.zeros(len(estimators_oos[times[i]][0][name]))
-        avg_perf_INS[times[i]] = np.zeros(len(estimators_ins[times[i]][0][name]))
-        avg_true_value[times[i]] = np.zeros(len(true_values[times[i]][0]))
-        for j in range(len(seeds)):
-            avg_perf_OOS[times[i]] = avg_perf_OOS[times[i]] + np.array(estimators_oos[times[i]][j][name]) / len(seeds)
-            avg_perf_INS[times[i]] = avg_perf_INS[times[i]] + np.array(estimators_ins[times[i]][j][name]) / len(seeds)
-            avg_true_value[times[i]] = avg_true_value[times[i]] + np.array(true_values[times[i]][j]) / len(seeds)
 
-        a_0 = i % 2
-        a_1 = int((i - a_0) / 2) % 2
-        ax[a_0, a_1].plot(shrinkage_list, avg_perf_OOS[times[i]])
-        ax[a_0, a_1].plot(shrinkage_list, avg_perf_INS[times[i]])
-        ax[a_0, a_1].plot(shrinkage_list, avg_true_value[times[i]])
-        ax[a_0, a_1].set_title(f'T = {times[i]}')
-
-    ax[0, 0].legend(['Average INS Value ', 'Average OOS Value', 'Theoretical Value'], loc='upper right')
-    fig.text(0.5, 0.04, 'Shrinkage Size', ha='center', fontsize=12)
-    fig.suptitle(name.upper() + f" \n  Complexity = {c}", fontsize=12)
-    plt.show()
+if __name__ == '__main__':
+    # testing leave one out:
+    times = [20, 250, 1000, 2500]
+    # complexity = [0.1, 0.5, 1, 2, 5, 10]
+    # times = [10, 50, 100, 250]
+    complexity = [0.2, 1, 2.5]
+    train_frac = 0.2
+    shrinkage_list = np.linspace(0.1, 10, 25)
+    beta_and_psi_link = 2
+    seeds = list(range(0, 10))
