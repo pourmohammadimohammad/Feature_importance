@@ -18,6 +18,12 @@ from parameters import *
 class LeaveOut:
 
     def __init__(self, t, c):
+        self.oos_optimal_sharpe = None
+        self.oos_optimal_mse = None
+        self.beta_hat_optimal_mse = None
+        self.beta_hat_optimal_sharpe = None
+        self.pi_ins = None
+        self.ret_vec_ins = None
         self.times = None
         self.labels_oos_list = None
         self.estimator_out_of_sample_cumulative = None
@@ -30,8 +36,8 @@ class LeaveOut:
         self.beta_eigenvalues = None
         self.true_value_mean = None
         self.true_value_var = None
-        self.estimator_oos = None
-        self.performance_ins = None
+        self.oos_perf_est = None
+        self.ins_perf_est = None
         self.pi_avg = None
         self.beta_hat = None
         self.eigenvectors = None
@@ -47,7 +53,7 @@ class LeaveOut:
         self.labels = None
         self.seed = 0
         self.beta_and_psi_link = 2
-        self.noise_size = 0
+        self.noise_size = 1
         self.activation = 'linear'
         self.number_neurons = 1
         self.shrinkage_list = np.linspace(0.1, 10, 100)
@@ -85,7 +91,7 @@ class LeaveOut:
     def test_parse_split(self, num_parts):
         oos_length = self.features_oos.shape[0]
         parts_frac = [0]
-        parts_frac.extend(oos_length * np.linspace(1, num_parts, num_parts)/num_parts)
+        parts_frac.extend(oos_length * np.linspace(1, num_parts, num_parts) / num_parts)
         oos_list_features = []
         oos_list_labels = []
         parts_frac = [int(parts_frac[i]) for i in range(len(parts_frac))]
@@ -105,29 +111,46 @@ class LeaveOut:
                                             eigenvectors=self.eigenvectors,
                                             shrinkage_list=self.shrinkage_list)
 
-    def ins_performance(self):
-        self.performance_ins, self.pi_avg = self.leave_one_out_estimator_beta(labels=self.labels_ins,
-                                                                              features=self.features_ins,
-                                                                              eigenvalues=self.eigenvalues,
-                                                                              eigenvectors=self.eigenvectors,
-                                                                              beta_hat=self.beta_hat,
-                                                                              shrinkage_list=self.shrinkage_list)
-        return self.performance_ins
 
-    def oos_performance(self, features_oos=None,labels_oos=None):
+
+
+    def ins_performance(self):
+        self.ins_perf_est, self.ret_vec_ins, self.pi_ins, self.pi_avg = self.leave_one_out_estimator_beta(
+            labels=self.labels_ins,
+            features=self.features_ins,
+            eigenvalues=self.eigenvalues,
+            eigenvectors=self.eigenvectors,
+            beta_hat=self.beta_hat,
+            shrinkage_list=self.shrinkage_list)
+
+        self.beta_hat_optimal_sharpe, self.beta_hat_optimal_mse = self.optimal_shrinkage(self.ret_vec_ins,
+                                                                                             self.pi_ins,
+                                                                                             self.beta_hat)
+
+
+
+    def oos_performance(self, features_oos=None, labels_oos=None):
         features_oos = self.features_oos if features_oos is None else features_oos
         labels_oos = self.labels_oos if labels_oos is None else labels_oos
 
-        self.estimator_oos = self.performance_oos(beta_hat=self.beta_hat,
-                                                  labels_out_of_sample=labels_oos,
-                                                  features_out_of_sample=features_oos)
-        return self.estimator_oos
+        self.oos_perf_est = self.performance_oos(beta_hat=self.beta_hat,
+                                                 labels_out_of_sample=labels_oos,
+                                                 features_out_of_sample=features_oos)
+
+        self.oos_optimal_sharpe = self.performance_oos(beta_hat=self.beta_hat_optimal_sharpe,
+                                                       labels_out_of_sample=labels_oos,
+                                                       features_out_of_sample=features_oos)['sharpe']
+
+        self.oos_optimal_mse = self.performance_oos(beta_hat=self.beta_hat_optimal_mse,
+                                                    labels_out_of_sample=labels_oos,
+                                                    features_out_of_sample=features_oos)['mse']
 
     def oos_performance_growing_sample(self, num_parts=4):
         self.test_parse_split(num_parts)
         estimator_out_of_sample = []
-        [estimator_out_of_sample.append(LeaveOut.oos_performance(self, self.features_oos_list[i],self.labels_oos_list[i]))
-         for i in range(len(self.features_oos_list))]
+        [estimator_out_of_sample.append(
+            LeaveOut.oos_performance(self, self.features_oos_list[i], self.labels_oos_list[i]))
+            for i in range(len(self.features_oos_list))]
         estimator_out_of_sample_cumulative = {}
         for name in estimator_out_of_sample[0].keys():
             estimator_out_of_sample_cumulative[name] = []
@@ -140,7 +163,6 @@ class LeaveOut:
                                                         for i in range(len(self.features_oos_list))]
 
         self.estimator_out_of_sample_cumulative = estimator_out_of_sample_cumulative
-        return estimator_out_of_sample_cumulative
 
     def calculate_true_value(self):
         self.true_value_mean = LeaveOut.leave_one_out_true_value(beta_dict=self.beta_dict,
@@ -149,7 +171,6 @@ class LeaveOut:
                                                                  eigenvectors=self.eigenvectors,
                                                                  shrinkage_list=self.shrinkage_list,
                                                                  noise_size_=self.noise_size)
-        return self.true_value_mean
 
     def theoretical_mean(self):
 
@@ -163,8 +184,6 @@ class LeaveOut:
         mean_true = [np.sum(self.beta_eigenvalues * self.psi_eigenvalues) - self.shrinkage_list[i] * xi[i] for i in
                      range(len(self.shrinkage_list))]
         self.mean_true = mean_true
-
-        return mean_true
 
     def True_value_eq_176(self, data_type):
 
@@ -186,30 +205,35 @@ class LeaveOut:
         self.true_value_beta_eq_176 = true_value_beta_eq_176
 
     @staticmethod
-    def smart_eigenvalue_decomposition(features: np.ndarray,
-                                       T: int = None):
+    def smart_eigenvalue_decomposition(features: np.ndarray):
         """
         Lemma 28: Efficient Eigen value decomposition
         :param features: features used to create covariance matrix times x P
         :param T: Weight used to normalize matrix
         :return: Left eigenvectors PxT and eigenvalues without zeros
         """
-        [T_true, P] = features.shape
-        T = T_true if T is None else T
+        [T, P] = features.shape
+        #
+        # if P > T:
+        #     covariance = features @ features.T
+        #
+        # else:
+        #     covariance = features.T @ features
+        #
+        # eigval, eigvec = np.linalg.eigh(covariance)
+        # eigvec = eigvec[:, eigval > 10 ** (-10)]
+        # eigval = eigval[eigval > 10 ** (-10)]
+        #
+        # if P > T:
+        #     # project features on normalized eigenvectors
+        #     eigvec = features.T @ eigvec * (eigval ** (-1 / 2)).reshape(1, -1)
 
-        if P > T:
-            covariance = features @ features.T / T
 
-        else:
-            covariance = features.T @ features / T
-
+        covariance = features.T @ features
         eigval, eigvec = np.linalg.eigh(covariance)
         eigvec = eigvec[:, eigval > 10 ** (-10)]
         eigval = eigval[eigval > 10 ** (-10)]
-
-        if P > T:
-            # project features on normalized eigenvectors
-            eigvec = np.matmul(features.T, eigvec * ((eigval * T) ** (-1 / 2)).reshape(1, -1))
+        eigval = eigval/T
 
         return eigval, eigvec
 
@@ -331,15 +355,15 @@ class LeaveOut:
                                                      shrinkage_list=shrinkage_list)
 
         # now, we compute R_{tau+1}(z) * pi_{times,tau} as a vector. The list is indexed by z while the vector is indexed by tau
-        estimator_list = [labels * pi[i] for i in range(len(shrinkage_list))]
+        ret_vec = [labels * pi[i] for i in range(len(shrinkage_list))]
 
         # Calculate strategy performance using insample dat
-        estimator_perf = LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
+        estimator_perf = LeaveOut.estimator_performance(ret_vec, pi, labels_squared)
 
         # do an average over all pi_T_tau do get the \hat \pi estimator
         pi_avg = [np.mean(p) for p in pi]
 
-        return estimator_perf, pi_avg
+        return estimator_perf, ret_vec, pi, pi_avg
 
     @staticmethod
     def empirical_stieltjes(eigenvalues, P, shrinkage_list):
@@ -368,8 +392,14 @@ class LeaveOut:
         """
         t = features_out_of_sample.shape[0]
         labels_squared = np.mean(labels_out_of_sample ** 2)
-        pi = [features_out_of_sample @ b for b in beta_hat]
-        estimator_list = [p * labels_out_of_sample for p in pi]
+
+        if type(beta_hat) == list:
+            pi = [features_out_of_sample @ b for b in beta_hat]
+            estimator_list = [p * labels_out_of_sample for p in pi]
+
+        else:
+            pi = features_out_of_sample @ beta_hat
+            estimator_list = pi * labels_out_of_sample
 
         return LeaveOut.estimator_performance(estimator_list, pi, labels_squared)
 
@@ -394,19 +424,33 @@ class LeaveOut:
 
     @staticmethod
     def estimator_performance(estimator_list, pi, labels_squared):
-        estimator_list_mean = [np.mean(e) for e in estimator_list]
+        if type(estimator_list) == list:
+            estimator_list_mean = [np.mean(e) for e in estimator_list]
 
-        estimator_list_std = [np.std(e) for e in estimator_list]
+            estimator_list_std = [np.sqrt(np.mean(e**2)) for e in estimator_list]
 
-        estimator_list_pi_2 = [np.mean(p ** 2) for p in pi]
+            estimator_list_pi_2 = [np.mean(p ** 2) for p in pi]
 
-        estimator_list_pi = [np.mean(p) for p in pi]
+            estimator_list_pi = [np.mean(p) for p in pi]
 
-        estimator_list_sharpe = [estimator_list_mean[i] / estimator_list_std[i]
-                                 for i in range(len(estimator_list))]
+            estimator_list_sharpe = [estimator_list_mean[i] / estimator_list_std[i]
+                                     for i in range(len(estimator_list))]
 
-        estimator_list_mse = [labels_squared - 2 * estimator_list_mean[i] + estimator_list_pi_2[i]
-                              for i in range(len(estimator_list))]
+            estimator_list_mse = [labels_squared - 2 * estimator_list_mean[i] + estimator_list_pi_2[i]
+                                  for i in range(len(estimator_list))]
+        else:
+            estimator_list_mean = np.mean(estimator_list)
+
+            estimator_list_std = np.sqrt(np.mean(estimator_list**2))
+
+            estimator_list_pi_2 = np.mean(pi ** 2)
+
+            estimator_list_pi = np.mean(pi)
+
+            estimator_list_sharpe = estimator_list_mean / estimator_list_std
+
+            estimator_list_mse = labels_squared - 2 * estimator_list_mean + estimator_list_pi_2
+
         estimator_perf = {}
         estimator_perf['mean'] = estimator_list_mean
         estimator_perf['std'] = estimator_list_std
@@ -414,6 +458,7 @@ class LeaveOut:
         estimator_perf['mse'] = estimator_list_mse
         estimator_perf['sharpe'] = estimator_list_sharpe
         estimator_perf['pi'] = estimator_list_pi
+
         return estimator_perf
 
     @staticmethod
@@ -580,3 +625,35 @@ class LeaveOut:
               range(len(shrinkage_list))]
 
         return xi
+
+    @staticmethod
+    def optimal_shrinkage(ret_vec_ins: list,
+                          pi_ins: list,
+                          beta_hat: list):
+
+        l = len(ret_vec_ins)
+        ret_mat_for_z = np.array(ret_vec_ins).reshape(l, -1)
+
+        # calculate average strategy return per unit of grid z
+        v = np.sum(ret_mat_for_z, 1)
+
+        pi_mat_for_z = np.array(pi_ins).reshape(l, -1)
+
+        # average pi times pi for different combinations of the z grid
+        m_mse = pi_mat_for_z @ pi_mat_for_z.T
+
+        # average strategy return times strategy return for different combinations of the z grid
+        m_sharpe = ret_mat_for_z @ ret_mat_for_z.T
+
+        # weights for mse
+        w_mse = np.linalg.pinv(m_mse) @ v
+
+        # weights for sharpe
+        w_sharpe = np.linalg.pinv(m_sharpe) @ v
+
+
+        beta_hat_mat = np.array(beta_hat).reshape(l,-1).T
+        beta_hat_optimal_sharpe = (beta_hat_mat @ w_sharpe).reshape(-1,1)
+        beta_hat_optimal_mse = (beta_hat_mat @ w_mse).reshape(-1,1)
+
+        return beta_hat_optimal_sharpe, beta_hat_optimal_mse
