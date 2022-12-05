@@ -138,3 +138,69 @@ class MarcenkoPastur:
         '''
         nu_prime = - (1 / c) * (xi + z * xi_prime)
         return nu_prime
+
+    @staticmethod
+    def solve_for_mcz_in_sdf(psi_eig: np.ndarray,
+                             z_: np.ndarray,
+                             c_: float,
+                             tolerance: float = 1e-10,
+                             maxit: int = 100):
+        """
+        Compute the function m(-z; c) in the pricing kernel paper according to equation 20
+
+        According to eqn 20, m(-z; c) = P^{-1} \sum_i (lam_psi_i (1 - c + cz m(- z; c)) + z)^{-1}. The derivative of the
+        right hand side is f'(m) = -P^{-1} \sum_i (lam_psi_i c z)/((lam_psi_i (1 - c + cz m(-z; c)) + z)^2)
+        and we will use these explicit expressions in Newton's method
+
+        To get the starting point, note that when c is small (close to 0), m(z;c) = P^{-1} \sum_i (\lam_psi_i + z)^{-1}.
+        We will use this as our starting point
+
+        :param psi_eig:
+        :param z_:
+        :param c_:
+        :param tolerance:
+        :param maxit:
+        :return:
+        :rtype:
+        """
+        psi_eig = psi_eig.reshape(-1, 1)
+
+        starting_point = (1 / (psi_eig + z_)).mean(axis=0)  # start at m(z;c) = P^{-1} \sum_i (\lam_psi_i + z)^{-1}
+
+        solution = starting_point.copy()
+
+        iter = 0
+        error = np.array(10 ** 10)
+        while iter < maxit and np.max(np.abs(error)) > tolerance:
+            # error = f(m) - m
+            error = ((1 / ((psi_eig * (1 - c_ + c_ * z_ * solution)) + z_)).mean(axis=0) - solution)
+            # error slope = f'(m) - 1
+            error_slope = (- ((psi_eig * c_ * z_) / ((psi_eig * (1 - c_ + c_ * z_ * solution)) + z_) ** 2).mean(
+                axis=0) - 1)
+            solution -= error / error_slope
+            iter += 1
+
+        if not (solution > 0).all():
+            # for some z we get the negative root!
+            # For those z, we solve for (f(m) - m) / (m - m') = 0, where m' are the negative roots
+            bad_zs = z_[solution < 0]
+            # the initial guess is critical as the function is very convex. We set it to be close to the
+            # point where m is not defined (close to the asymptotic line). Otherwise the solve will break
+            solution_new = 1 / (c_ * bad_zs) * (c_ - 1 - bad_zs / psi_eig[0]) + 1e-5  # set a large new initial guess
+            neg_solutions = solution[solution < 0].copy()
+            iter = 0
+            error = np.array(10 ** 10)
+            while iter < maxit and np.max(np.abs(error)) > tolerance:
+                # error = f(m) - m
+                error = ((1 / ((psi_eig * (1 - c_ + c_ * bad_zs * solution_new)) + bad_zs)).mean(axis=0) - solution_new) \
+                        / (solution_new - neg_solutions)
+                # error slope = f'(m) - 1
+                deriv_numerator = - ((psi_eig * c_ * bad_zs) /
+                                     ((psi_eig * (1 - c_ + c_ * bad_zs * solution_new)) + bad_zs) ** 2).mean(axis=0) - 1
+                error_slope = (deriv_numerator - error) / (solution_new - neg_solutions)
+                solution_new -= error / error_slope
+                iter += 1
+
+            solution[solution < 0] = solution_new
+
+        return solution
