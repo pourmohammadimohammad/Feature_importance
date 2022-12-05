@@ -16,9 +16,10 @@ from ploting import *
 
 
 # Clean up and test leave two out
-# Todo: leave one out and leave two out equivalane
-# Todo: Bring everything on server
-# Todo: Fix variance estimate
+# Todo: INS vs OOS plots v
+# Todo: INS vs OOS plots W_mse
+# Todo: INS vs OOS plots W_sr
+
 
 def map_w_to_w_tilde(w_matrix):
     """
@@ -120,8 +121,7 @@ def run_loo(t: int,
             seed: int = None,
             beta_and_psi_link: float = None,
             shrinkage_list: list = None,
-            simple_beta: bool = False,
-            growing_oos: bool = False) -> object:
+            simple_beta: bool = False) -> object:
     seed = 0 if seed is None else seed
 
     lo_est = LeaveOut(t, c)
@@ -137,57 +137,38 @@ def run_loo(t: int,
     lo_est.train_model()
     lo_est.ins_performance()
     lo_est.oos_performance()
+    lo_est.theoretical_mean_var()
 
     return lo_est
 
 
 if __name__ == '__main__':
     # testing leave one out:
-    times = [20, 250, 1000, 2500]
+    times = [100, 500, 2000, 4000]
     # complexity = [0.1, 0.5, 1, 2, 5, 10]
     # times = [10, 50, 100, 250]
-    # complexity = [0.2, 1, 2.5]
-    train_frac = 0.7
+    complexity = [0.2, 1, 2.5]
+    train_frac = 0.5
     shrinkage_list = np.linspace(0.1, 10, 100)
     beta_and_psi_link = 2
     seeds = list(range(0, 10))
-    complexity = np.linspace(0.2, 1, 5)
-    t = 2000
+    # complexity = np.linspace(0., 1, 5)
 
-    for c in complexity:
 
-        loo = run_loo(t=t,
-                      c=c,
-                      train_frac=train_frac,
-                      shrinkage_list=shrinkage_list)
 
-        print('Optimal', loo.oos_optimal_mse)
-        print('regular', np.array(loo.oos_perf_est['mse']).mean())
-        print('Optimal', loo.oos_optimal_sharpe)
-        print('regular', np.array(loo.oos_perf_est['sharpe']).mean())
 
-        ones = np.ones([len(shrinkage_list), 1])
 
-        plt.title(f'MSE \n c = {c}')
-        plt.plot(shrinkage_list, loo.oos_perf_est['mse'])
-        plt.plot(shrinkage_list, ones * loo.oos_optimal_mse)
-        plt.legend(['Overall', 'Optimal'])
-        plt.show()
+    estimators = ins_vs_oos(times,
+                            complexity,
+                            train_frac,
+                            beta_and_psi_link,
+                            shrinkage_list)
 
-        plt.title(f'sharpe \n c = {c}')
-        plt.plot(shrinkage_list, loo.oos_perf_est['sharpe'])
-        plt.plot(shrinkage_list, ones * loo.oos_optimal_sharpe)
-        plt.legend(['Overall', 'Optimal'])
-        plt.show()
+    ins_vs_oos_plots(times=times,
+                     complexity=complexity,
+                     train_frac=train_frac,
+                     estimators=estimators,
+                     shrinkage_list=shrinkage_list,
+                     name='sharpe')
 
-    #
-    # ret_mat_for_z = np.array(loo.ret_vec_ins).reshape(-1,len(loo.shrinkage_list))
-    # v = np.sum(ret_mat_for_z,0)
-    # pi_mat_for_z = np.array(loo.pi_ins).reshape(-1,len(loo.shrinkage_list))
-    # m_mse = pi_mat_for_z.T @ pi_mat_for_z
-    # m_sharpe = ret_mat_for_z.T @ ret_mat_for_z
-    # w_mse = np.linalg.pinv(m_mse) @ v
-    # w_sharpe = np.linalg.pinv(m_sharpe) @ v
-    # beta_hat_mat = np.array(loo.beta_hat).reshape(loo.p,-1)
-    # beta_hat_optimal_sharpe = beta_hat_mat @ w_sharpe
-    # beta_hat_optimal_mse = beta_hat_mat @ w_mse
+

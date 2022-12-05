@@ -18,6 +18,9 @@ from parameters import *
 class LeaveOut:
 
     def __init__(self, t, c):
+        self.m_z_c = None
+        self.var_true = None
+        self.xi_1 = None
         self.oos_optimal_sharpe = None
         self.oos_optimal_mse = None
         self.beta_hat_optimal_mse = None
@@ -32,7 +35,7 @@ class LeaveOut:
         self.true_value_sigma_beta_eq_176 = None
         self.true_value_limit_eq_176 = None
         self.mean_true = None
-        self.xi = None
+        self.xi_beta_1 = None
         self.beta_eigenvalues = None
         self.true_value_mean = None
         self.true_value_var = None
@@ -53,7 +56,7 @@ class LeaveOut:
         self.labels = None
         self.seed = 0
         self.beta_and_psi_link = 2
-        self.noise_size = 1
+        self.noise_size = 0
         self.activation = 'linear'
         self.number_neurons = 1
         self.shrinkage_list = np.linspace(0.1, 10, 100)
@@ -111,9 +114,6 @@ class LeaveOut:
                                             eigenvectors=self.eigenvectors,
                                             shrinkage_list=self.shrinkage_list)
 
-
-
-
     def ins_performance(self):
         self.ins_perf_est, self.ret_vec_ins, self.pi_ins, self.pi_avg = self.leave_one_out_estimator_beta(
             labels=self.labels_ins,
@@ -124,10 +124,8 @@ class LeaveOut:
             shrinkage_list=self.shrinkage_list)
 
         self.beta_hat_optimal_sharpe, self.beta_hat_optimal_mse = self.optimal_shrinkage(self.ret_vec_ins,
-                                                                                             self.pi_ins,
-                                                                                             self.beta_hat)
-
-
+                                                                                         self.pi_ins,
+                                                                                         self.beta_hat)
 
     def oos_performance(self, features_oos=None, labels_oos=None):
         features_oos = self.features_oos if features_oos is None else features_oos
@@ -172,18 +170,80 @@ class LeaveOut:
                                                                  shrinkage_list=self.shrinkage_list,
                                                                  noise_size_=self.noise_size)
 
-    def theoretical_mean(self):
+    def theoretical_mean_var(self):
 
-        xi = LeaveOut.xi_beta_k_true(l=1,
-                                     c=self.c,
-                                     psi_eigenvalues=self.psi_eigenvalues,
-                                     beta_eigenvalues=self.beta_eigenvalues,
-                                     shrinkage_list=self.shrinkage_list)
 
-        self.xi = xi
-        mean_true = [np.sum(self.beta_eigenvalues * self.psi_eigenvalues) - self.shrinkage_list[i] * xi[i] for i in
+        c = self.c / self.train_frac
+
+
+
+        m_z_c = self.empirical_stieltjes(self.eigenvalues, self.p, self.shrinkage_list)
+        
+        self.m_z_c = m_z_c
+
+
+
+        xi_beta_1 = self.xi_k_true(c=c,
+                                   psi_eigenvalues=self.psi_eigenvalues,
+                                   beta_eigenvalues=self.beta_eigenvalues,
+                                   shrinkage_list=self.shrinkage_list,
+                                   m_z_c = m_z_c)
+
+        xi_beta_0 = self.xi_k_true(l=0,
+                                   c=c,
+                                   psi_eigenvalues=self.psi_eigenvalues,
+                                   beta_eigenvalues=self.beta_eigenvalues,
+                                   shrinkage_list=self.shrinkage_list,
+                                   m_z_c = m_z_c)
+
+        derivative_xi_beta_0 = self.xi_k_true(l=0,
+                                              c=c,
+                                              d=2,
+                                              psi_eigenvalues=self.psi_eigenvalues,
+                                              beta_eigenvalues=self.beta_eigenvalues,
+                                              shrinkage_list=self.shrinkage_list,
+                                              m_z_c = m_z_c)
+
+        xi_1 = self.xi_k_true(c=c,
+                              psi_eigenvalues=self.psi_eigenvalues,
+                              shrinkage_list=self.shrinkage_list,
+                              m_z_c = m_z_c)
+
+        derivative_xi_1 = self.xi_k_true(c=c,
+                                         d=2,
+                                         psi_eigenvalues=self.psi_eigenvalues,
+                                         shrinkage_list=self.shrinkage_list,
+                                         m_z_c = m_z_c)
+
+        psi_beta = np.sum(self.beta_eigenvalues * self.psi_eigenvalues)
+
+        normalizer = self.noise_size ** 2 + psi_beta
+
+        mean_true = [psi_beta - self.shrinkage_list[i] * xi_beta_1[i] for i in
                      range(len(self.shrinkage_list))]
+
+        xi_term = [ xi_1[i] - self.shrinkage_list[i] * derivative_xi_1[i]
+                    for i in range(len(self.shrinkage_list))]
+        xi_beta_term = [xi_beta_0[i] - self.shrinkage_list[i] * derivative_xi_beta_0[i]
+                        for i in range(len(self.shrinkage_list))]
+
+        denominator = 1 / (1 - c + c * self.shrinkage_list * m_z_c)
+
+        params = [denominator[i] * self.shrinkage_list[i] for i in range(len(self.shrinkage_list))]
+
+
+        second_term = [ (params[i] ** 2) * xi_beta_term[i]
+                        - self.shrinkage_list[i] * xi_beta_1[i]
+                        for i in range(len(self.shrinkage_list))]
+
+        var_true = [normalizer * (mean_true[i] + second_term[i] + self.noise_size * xi_term[i])
+                    for i in range(len(self.shrinkage_list))]
+
+
+
         self.mean_true = mean_true
+        self.var_true = var_true
+
 
     def True_value_eq_176(self, data_type):
 
@@ -213,27 +273,22 @@ class LeaveOut:
         :return: Left eigenvectors PxT and eigenvalues without zeros
         """
         [T, P] = features.shape
-        #
-        # if P > T:
-        #     covariance = features @ features.T
-        #
-        # else:
-        #     covariance = features.T @ features
-        #
-        # eigval, eigvec = np.linalg.eigh(covariance)
-        # eigvec = eigvec[:, eigval > 10 ** (-10)]
-        # eigval = eigval[eigval > 10 ** (-10)]
-        #
-        # if P > T:
-        #     # project features on normalized eigenvectors
-        #     eigvec = features.T @ eigvec * (eigval ** (-1 / 2)).reshape(1, -1)
 
+        if P > T:
+            covariance = features @ features.T
 
-        covariance = features.T @ features
+        else:
+            covariance = features.T @ features
+
         eigval, eigvec = np.linalg.eigh(covariance)
         eigvec = eigvec[:, eigval > 10 ** (-10)]
         eigval = eigval[eigval > 10 ** (-10)]
-        eigval = eigval/T
+
+        if P > T:
+            # project features on normalized eigenvectors
+            eigvec = features.T @ eigvec * (eigval ** (-1 / 2)).reshape(1, -1)
+
+        eigval = eigval / T
 
         return eigval, eigvec
 
@@ -427,7 +482,10 @@ class LeaveOut:
         if type(estimator_list) == list:
             estimator_list_mean = [np.mean(e) for e in estimator_list]
 
-            estimator_list_std = [np.sqrt(np.mean(e**2)) for e in estimator_list]
+            estimator_list_var = [np.mean(e ** 2) for e in estimator_list]
+
+            estimator_list_std = [np.sqrt(estimator_list_var[i] - estimator_list_mean[i] ** 2)
+                                  for i in range(len(estimator_list_var))]
 
             estimator_list_pi_2 = [np.mean(p ** 2) for p in pi]
 
@@ -441,8 +499,9 @@ class LeaveOut:
         else:
             estimator_list_mean = np.mean(estimator_list)
 
-            estimator_list_std = np.sqrt(np.mean(estimator_list**2))
+            estimator_list_var = np.mean(estimator_list ** 2)
 
+            estimator_list_std = np.sqrt(estimator_list_var - estimator_list_mean ** 2)
             estimator_list_pi_2 = np.mean(pi ** 2)
 
             estimator_list_pi = np.mean(pi)
@@ -453,6 +512,7 @@ class LeaveOut:
 
         estimator_perf = {}
         estimator_perf['mean'] = estimator_list_mean
+        estimator_perf['var'] = estimator_list_var
         estimator_perf['std'] = estimator_list_std
         estimator_perf['pi_2'] = estimator_list_pi_2
         estimator_perf['mse'] = estimator_list_mse
@@ -593,36 +653,51 @@ class LeaveOut:
         return true_values_mean
 
     @staticmethod
-    def xi_beta_k_true(c: float,
-                       l: int,
-                       beta_eigenvalues: np.ndarray,
-                       psi_eigenvalues: np.ndarray,
-                       shrinkage_list: np.ndarray):
-        """
-        Efficient way to estimate \beta \Psi (\hat \Psi + zI)^{-1} \Psi \beta
-        :param beta_dict: beta paramaters (ground truth)
-        :param psi_eigenvalues: True eigenvalues of covariance matrix
-        :param shrinkage_list:
-        :param T: Sample size
-        :return:
-        """
+    def xi_k_true(c: float,
+                  psi_eigenvalues: np.ndarray,
+                  shrinkage_list: np.ndarray,
+                  m_z_c:np.ndarray,
+                  beta_eigenvalues: np.ndarray = None,
+                  l: int = 1,
+                  d: int = 1):
 
-        # m_z_c = MarcenkoPastur.marcenko_pastur(c,shrinkage_list)
-        # denominator = 1/(1-c+c*shrinkage_list*m_z_c)
-        # params = [ denominator[i]*shrinkage_list[i] for i in range(len(shrinkage_list))]
-        #
-        # inverse_eigen_values = [(psi_eigenvalues ** l)/(psi_eigenvalues+p) for p  in params]
-        #
-        # xi = [np.trace(beta_eigenvalues*inverse_eigen_values[i])*denominator[i] for i in range(len(shrinkage_list))]
-
-        m_z_c = MarcenkoPastur.marcenko_pastur(c, shrinkage_list)
         denominator = 1 / (1 - c + c * shrinkage_list * m_z_c)
         params = [denominator[i] * shrinkage_list[i] for i in range(len(shrinkage_list))]
 
-        inverse_eigen_values = [(psi_eigenvalues ** l) / (psi_eigenvalues + p) for p in params]
+        inverse_eigen_values = [(psi_eigenvalues ** l) / ((psi_eigenvalues + p) ** d) for p in params]
 
-        xi = [np.sum(beta_eigenvalues * inverse_eigen_values[i]) * denominator[i] for i in
-              range(len(shrinkage_list))]
+        if beta_eigenvalues is None:
+            p = psi_eigenvalues.shape[1]
+            t = int(p*c)
+            xi = [np.sum(inverse_eigen_values[i]) * denominator[i] / t for i in
+                  range(len(shrinkage_list))]
+
+        else:
+            xi = [np.sum(beta_eigenvalues * inverse_eigen_values[i]) * denominator[i] for i in
+                  range(len(shrinkage_list))]
+
+        # if l ==1 and d == 1 :
+        #     xi = denominator - 1
+
+        # seems to work for full sample t and c adjusted very strange...
+        # l = 0
+        # d = 1
+        #
+        # c = c / train_frac
+        #
+        # psi_eigenvalues = loo.psi_eigenvalues
+        #
+        # denominator = 1 / (1 - c + c * shrinkage_list * m_z_c)
+        # params = [denominator[i] * shrinkage_list[i] for i in range(len(shrinkage_list))]
+        #
+        # inverse_eigen_values = [(psi_eigenvalues ** l) / ((psi_eigenvalues + p) ** d) for p in params]
+        #
+        # p = psi_eigenvalues.shape[1]
+        # xi = [1 + np.sum(inverse_eigen_values[i]) * denominator[i] / t for i in
+        #       range(len(shrinkage_list))]
+        #
+        # est_m = [np.sum(inverse_eigen_values[i]) * denominator[i] / p for i in
+        #          range(len(shrinkage_list))]
 
         return xi
 
@@ -651,9 +726,8 @@ class LeaveOut:
         # weights for sharpe
         w_sharpe = np.linalg.pinv(m_sharpe) @ v
 
-
-        beta_hat_mat = np.array(beta_hat).reshape(l,-1).T
-        beta_hat_optimal_sharpe = (beta_hat_mat @ w_sharpe).reshape(-1,1)
-        beta_hat_optimal_mse = (beta_hat_mat @ w_mse).reshape(-1,1)
+        beta_hat_mat = np.array(beta_hat).reshape(l, -1).T
+        beta_hat_optimal_sharpe = (beta_hat_mat @ w_sharpe).reshape(-1, 1)
+        beta_hat_optimal_mse = (beta_hat_mat @ w_mse).reshape(-1, 1)
 
         return beta_hat_optimal_sharpe, beta_hat_optimal_mse
