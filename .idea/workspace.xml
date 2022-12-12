@@ -4,9 +4,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="62d6154d-72ed-4651-a7f0-4b52a864813a" name="Changes" comment="optimal non-linear shrinkage added, class changed a bit">
-      <change beforePath="$PROJECT_DIR$/leaveout.py" beforeDir="false" afterPath="$PROJECT_DIR$/leaveout.py" afterDir="false" />
+    <list default="true" id="62d6154d-72ed-4651-a7f0-4b52a864813a" name="Changes" comment="master equation added">
+      <change afterPath="$PROJECT_DIR$/_sh/code_to_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_sh/load_down_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_sh/push_to_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/array_unige.slurm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/debug_unige.slurm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/get_computer.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/module.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/python.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gen_random_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/results.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server_code.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/T=4k.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/some_functions_mohammad.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/some_functions_mohammad.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ins_oos_w_diag_mse" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/leaveout.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_out.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mean_ins_seeds.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mean_oos_seeds" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/parameters.py" beforeDir="false" afterPath="$PROJECT_DIR$/parameters.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ploting.py" beforeDir="false" afterPath="$PROJECT_DIR$/ploting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/mean.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/std.jpg" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/wip.py" beforeDir="false" afterPath="$PROJECT_DIR$/wip.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -28,7 +48,6 @@
       </list>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
-    <option name="UPDATE_TYPE" value="REBASE" />
   </component>
   <component name="GitSEFilterConfiguration">
     <file-type-list>
@@ -55,13 +74,19 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="TODO_SCOPE" value="All Places" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="settings.editor.selected.configurable" value="vcs.Git" />
   </component>
-  <component name="RunManager" selected="Python.wip">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.results">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="Feature_importance" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -106,10 +131,54 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="results" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/results.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="server_code" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/server_code.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="wip" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Feature_importance" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/opt/anaconda3/envs/pythonProject3/bin/python" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -127,6 +196,8 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.results" />
+        <item itemvalue="Python.server_code" />
         <item itemvalue="Python.wip" />
         <item itemvalue="Python.main" />
       </list>
@@ -189,7 +260,14 @@
       <workItem from="1670193690524" duration="1459000" />
       <workItem from="1670242649409" duration="6544000" />
       <workItem from="1670253343058" duration="10368000" />
-      <workItem from="1670265634485" duration="1136000" />
+      <workItem from="1670265634485" duration="2455000" />
+      <workItem from="1670275258014" duration="658000" />
+      <workItem from="1670313839982" duration="3354000" />
+      <workItem from="1670336950818" duration="7838000" />
+      <workItem from="1670397967666" duration="18228000" />
+      <workItem from="1670537130732" duration="360000" />
+      <workItem from="1670787922808" duration="6907000" />
+      <workItem from="1670829520884" duration="5970000" />
     </task>
     <task id="LOCAL-00001" summary="Plot for beta in Large T (samples) small P (number of features) added">
       <created>1668080393956</created>
@@ -261,7 +339,21 @@
       <option name="project" value="LOCAL" />
       <updated>1670152847821</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="master equation added">
+      <created>1670269235151</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1670269235151</updated>
+    </task>
+    <task id="LOCAL-00012" summary="master equation added">
+      <created>1670269259174</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1670269259174</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -290,7 +382,8 @@
     <MESSAGE value="Added leave out class and script to get plots" />
     <MESSAGE value="code cleaned up, plotting functions added, true values can be computed in leaveout class" />
     <MESSAGE value="optimal non-linear shrinkage added, class changed a bit" />
-    <option name="LAST_COMMIT_MESSAGE" value="optimal non-linear shrinkage added, class changed a bit" />
+    <MESSAGE value="master equation added" />
+    <option name="LAST_COMMIT_MESSAGE" value="master equation added" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Feature_importance$main.coverage" NAME="main Coverage Results" MODIFIED="1668075103143" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

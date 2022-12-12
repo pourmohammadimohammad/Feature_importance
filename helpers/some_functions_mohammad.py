@@ -1,7 +1,7 @@
 import numpy
 import numpy as np
 import pandas as pd
-from leaveout import *
+from leave_out import *
 from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures

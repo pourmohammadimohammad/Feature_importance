@@ -1,7 +1,7 @@
 import numpy
 import numpy as np
 import pandas as pd
-from leaveout import *
+from leave_out import *
 from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
@@ -162,7 +162,6 @@ def ins_vs_oos_plots(times: list,
 
     [ax_legend.append(f'c = {np.round(c / train_frac, 2)} INS') for c in complexity]
     [ax_legend.append(f'c = {np.round(c / train_frac, 2)} OOS') for c in complexity]
-    ones = np.ones(shrinkage_list.shape)
 
     # for name in list(estimators[times[0]][0].ins_perf_est.keys()):
     fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
@@ -175,14 +174,6 @@ def ins_vs_oos_plots(times: list,
         [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].oos_perf_est[name])
          for j in range(len(complexity))]
 
-        if name == 'sharpe':
-            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_sharpe)
-             for j in range(len(complexity))]
-
-        if name == 'mse':
-            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_mse)
-             for j in range(len(complexity))]
-
         ax[a_0, a_1].set_title(f'T = T_1 = {int(times[i] / 2)}')
 
     ax[0, 0].legend(ax_legend, loc='upper right')
@@ -190,6 +181,8 @@ def ins_vs_oos_plots(times: list,
     if title is not None:
         fig.suptitle(title, fontsize=12)
     plt.show()
+
+
 
 
 def optimal_vs_oos_plots(times: list,
@@ -202,9 +195,14 @@ def optimal_vs_oos_plots(times: list,
     ax_legend = []
 
     [ax_legend.append(f'c = {np.round(c / train_frac, 2)} OOS') for c in complexity]
+
     if name == 'sharpe' or name == 'mse':
         [ax_legend.append(f'c = {np.round(c / train_frac, 2)} Optimal') for c in complexity]
         ones = np.ones(shrinkage_list.shape)
+
+    colors = []
+
+    [colors.append(f'C{i}') for i in range(len(complexity))]
 
     # for name in list(estimators[times[0]][0].ins_perf_est.keys()):
     fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
@@ -212,15 +210,17 @@ def optimal_vs_oos_plots(times: list,
         a_0 = i % 2
         a_1 = int((i - a_0) / 2) % 2
 
-        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].oos_perf_est[name])
+        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].oos_perf_est[name], color=colors[j])
          for j in range(len(complexity))]
 
         if name == 'sharpe':
-            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_sharpe)
+            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_sharpe
+                               , color=colors[j], linestyle='dashed')
              for j in range(len(complexity))]
 
         if name == 'mse':
-            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_mse)
+            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_mse,
+                               color=colors[j], linestyle='dashed')
              for j in range(len(complexity))]
 
         ax[a_0, a_1].set_title(f'T = T_1 = {int(times[i] / 2)}')
