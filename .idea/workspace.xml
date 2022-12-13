@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="e2805ac9-9fa4-44f4-a6a8-3b46ed90cdc3" name="Changes" comment="added the function solving the master equation for m(-z;c)" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2HAFuGHT3gWbbkuJjZCSvXBwtcL" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/malamud/Dropbox/MY_STUFF/TRADING/Feature_importance&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="e2805ac9-9fa4-44f4-a6a8-3b46ed90cdc3" name="Changes" comment="" />
+      <created>1667720202478</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1667720202478</updated>
+      <workItem from="1667720204845" duration="5134000" />
+      <workItem from="1668092707524" duration="5041000" />
+      <workItem from="1668496444017" duration="841000" />
+      <workItem from="1668506787908" duration="741000" />
+      <workItem from="1668623084552" duration="98000" />
+      <workItem from="1668623209562" duration="2060000" />
+      <workItem from="1668636114823" duration="995000" />
+      <workItem from="1668699317504" duration="514000" />
+      <workItem from="1669233132351" duration="3761000" />
+      <workItem from="1669587104464" duration="258000" />
+      <workItem from="1670268726545" duration="90000" />
+      <workItem from="1670268822454" duration="185000" />
+    </task>
+    <task id="LOCAL-00001" summary="created the repo, imported all the necessary code">
+      <created>1667725210885</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1667725210885</updated>
+    </task>
+    <task id="LOCAL-00002" summary="expanded docstring for simulate_data.">
+      <created>1667725360810</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1667725360810</updated>
+    </task>
+    <task id="LOCAL-00003" summary="created the main() function, added docstring to it">
+      <created>1667726349687</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1667726349687</updated>
+    </task>
+    <task id="LOCAL-00004" summary="added use_random_features boolean to main; also a TODO for Mohammad">
+      <created>1667727026189</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1667727026189</updated>
+    </task>
+    <task id="LOCAL-00005" summary="optimized code a bit">
+      <created>1668180838746</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1668180838746</updated>
+    </task>
+    <task id="LOCAL-00006" summary="leave_two_out_estimator_vectorized_resolvent optimized">
+      <created>1668636406278</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1668636406278</updated>
+    </task>
+    <task id="LOCAL-00007" summary="small tidy up of wip.py">
+      <created>1669242790764</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1669242790764</updated>
+    </task>
+    <task id="LOCAL-00008" summary="small tidy up of wip.py, again">
+      <created>1669243880405</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1669243880405</updated>
+    </task>
+    <task id="LOCAL-00009" summary="added the function solving the master equation for m(-z;c)">
+      <created>1670268871206</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1670268871206</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+    <MESSAGE value="created the repo, imported all the necessary code" />
+    <MESSAGE value="expanded docstring for simulate_data." />
+    <MESSAGE value="created the main() function, added docstring to it" />
+    <MESSAGE value="added use_random_features boolean to main; also a TODO for Mohammad" />
+    <MESSAGE value="optimized code a bit" />
+    <MESSAGE value="leave_two_out_estimator_vectorized_resolvent optimized" />
+    <MESSAGE value="small tidy up of wip.py" />
+    <MESSAGE value="small tidy up of wip.py, again" />
+    <MESSAGE value="added the function solving the master equation for m(-z;c)" />
+    <option name="LAST_COMMIT_MESSAGE" value="added the function solving the master equation for m(-z;c)" />
+  </component>
+</project>
