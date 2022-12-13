@@ -1,7 +1,7 @@
 import numpy
 import numpy as np
 import pandas as pd
-from leaveout import *
+from leave_out import *
 from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
@@ -10,6 +10,7 @@ from tqdm import tqdm
 from helpers.marcenko_pastur import MarcenkoPastur
 from parameters import *
 from wip import *
+
 
 def plot_sub_plots(estimators, shrinkage_list, ax_legend, c, plot_name):
     times = list(estimators.keys())
@@ -133,14 +134,11 @@ def expanding_window_experment(t: int,
     return estimators_oos
 
 
-def ins_vs_oos_experiment(times: list,
-                          complexity: list,
-                          train_frac: float,
-                          beta_and_psi_link: float,
-                          shrinkage_list: np.ndarray):
-    ax_legend = []
-    [ax_legend.extend([f'Complexity = {c} INS', f'Complexity = {c} OOS']) for c in complexity]
-
+def ins_vs_oos(times: list,
+               complexity: list,
+               train_frac: float,
+               beta_and_psi_link: float,
+               shrinkage_list: np.ndarray):
     estimators = {}
     for i in range(len(times)):
         estimators[times[i]] = []
@@ -148,26 +146,90 @@ def ins_vs_oos_experiment(times: list,
                                              c=c,
                                              train_frac=train_frac,
                                              beta_and_psi_link=beta_and_psi_link,
-                                             shrinkage_list=shrinkage_list)[0:2]) for c in complexity]
+                                             shrinkage_list=shrinkage_list)) for c in complexity]
 
-    for name in estimators[times[0]][0][0].keys():
-        fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
-        for i in range(len(times)):
-            a_0 = i % 2
-            a_1 = int((i - a_0) / 2) % 2
-            [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j][0][name])
+    return estimators
+
+
+def ins_vs_oos_plots(times: list,
+                     complexity: list,
+                     train_frac: float,
+                     estimators: list,
+                     shrinkage_list: np.ndarray,
+                     name: str = 'mean',
+                     title: str = None):
+    ax_legend = []
+
+    [ax_legend.append(f'c = {np.round(c / train_frac, 2)} INS') for c in complexity]
+    [ax_legend.append(f'c = {np.round(c / train_frac, 2)} OOS') for c in complexity]
+
+    # for name in list(estimators[times[0]][0].ins_perf_est.keys()):
+    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+    for i in range(len(times)):
+        a_0 = i % 2
+        a_1 = int((i - a_0) / 2) % 2
+        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].ins_perf_est[name])
+         for j in range(len(complexity))]
+
+        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].oos_perf_est[name])
+         for j in range(len(complexity))]
+
+        ax[a_0, a_1].set_title(f'T = T_1 = {int(times[i] / 2)}')
+
+    ax[0, 0].legend(ax_legend, loc='upper right')
+    fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+    if title is not None:
+        fig.suptitle(title, fontsize=12)
+    plt.show()
+
+
+
+
+def optimal_vs_oos_plots(times: list,
+                         complexity: list,
+                         estimators: list,
+                         shrinkage_list: np.ndarray,
+                         train_frac: float = 0.5,
+                         name: str = 'sharpe',
+                         title: str = None):
+    ax_legend = []
+
+    [ax_legend.append(f'c = {np.round(c / train_frac, 2)} OOS') for c in complexity]
+
+    if name == 'sharpe' or name == 'mse':
+        [ax_legend.append(f'c = {np.round(c / train_frac, 2)} Optimal') for c in complexity]
+        ones = np.ones(shrinkage_list.shape)
+
+    colors = []
+
+    [colors.append(f'C{i}') for i in range(len(complexity))]
+
+    # for name in list(estimators[times[0]][0].ins_perf_est.keys()):
+    fig, ax = plt.subplots(2, 2, sharex=True, figsize=(8, 8))
+    for i in range(len(times)):
+        a_0 = i % 2
+        a_1 = int((i - a_0) / 2) % 2
+
+        [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j].oos_perf_est[name], color=colors[j])
+         for j in range(len(complexity))]
+
+        if name == 'sharpe':
+            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_sharpe
+                               , color=colors[j], linestyle='dashed')
              for j in range(len(complexity))]
 
-            [ax[a_0, a_1].plot(shrinkage_list, estimators[times[i]][j][1][name])
+        if name == 'mse':
+            [ax[a_0, a_1].plot(shrinkage_list, ones * estimators[times[i]][j].oos_optimal_mse,
+                               color=colors[j], linestyle='dashed')
              for j in range(len(complexity))]
 
-            ax[a_0, a_1].set_title(f'T = {times[i]}')
+        ax[a_0, a_1].set_title(f'T = T_1 = {int(times[i] / 2)}')
 
-        ax[0, 0].legend(ax_legend, loc='upper right')
-        fig.text(0.5, 0.04, 'Shrinkage Size', ha='center', fontsize=12)
-        fig.suptitle(name.upper() + f" \n  beta-psi link= {beta_and_psi_link}", fontsize=12)
-        plt.show()
-        return estimators
+    ax[0, 0].legend(ax_legend, loc='upper right')
+    fig.text(0.5, 0.04, 'z', ha='center', fontsize=12)
+    if title is not None:
+        fig.suptitle(title, fontsize=12)
+    plt.show()
 
 
 def complete_comparison_experiment(t: int,
@@ -236,7 +298,7 @@ def across_seeds_experiment(times: list,
                                                                                      beta_and_psi_link,
                                                                                      shrinkage_list,
                                                                                      seeds)
-    seeds_legend =[]
+    seeds_legend = []
     [seeds_legend.append(f'seed {s}') for s in seeds]
 
     plot_unconditionally(estimators_oos=estimators_oos,
@@ -256,4 +318,3 @@ def across_seeds_experiment(times: list,
                    ax_legend=seeds_legend,
                    c=c,
                    plot_name='In Sample')
-

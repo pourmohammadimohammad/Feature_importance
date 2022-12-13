@@ -4,7 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e2805ac9-9fa4-44f4-a6a8-3b46ed90cdc3" name="Changes" comment="added the function solving the master equation for m(-z;c)" />
+    <list default="true" id="62d6154d-72ed-4651-a7f0-4b52a864813a" name="Changes" comment="master equation added">
+      <change afterPath="$PROJECT_DIR$/_sh/code_to_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_sh/load_down_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_sh/push_to_unige.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/array_unige.slurm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/debug_unige.slurm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/get_computer.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/module.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/_slurm/python.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gen_random_data.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/results.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/server_code.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/T=4k.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/helpers/some_functions_mohammad.py" beforeDir="false" afterPath="$PROJECT_DIR$/helpers/some_functions_mohammad.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ins_oos_w_diag_mse" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/leaveout.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_out.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mean_ins_seeds.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mean_oos_seeds" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/parameters.py" beforeDir="false" afterPath="$PROJECT_DIR$/parameters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ploting.py" beforeDir="false" afterPath="$PROJECT_DIR$/ploting.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/mean.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/plots/std.jpg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/wip.py" beforeDir="false" afterPath="$PROJECT_DIR$/wip.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,125 +42,318 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="SMalamud &lt;semyon.malamud@epfl.ch&gt;" />
+      </list>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
-  <component name="ProjectId" id="2HAFuGHT3gWbbkuJjZCSvXBwtcL" />
-  <component name="ProjectLevelVcsManager">
-    <ConfirmationsSetting value="2" id="Add" />
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
+  <component name="ProjectId" id="2HLquKHMjjnnVwlu1CARpX3AHHw" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/malamud/Dropbox/MY_STUFF/TRADING/Feature_importance&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
-  }
-}</component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="TODO_SCOPE" value="All Places" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="settings.editor.selected.configurable" value="vcs.Git" />
+  </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
+  <component name="RunManager" selected="Python.results">
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="results" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/results.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="server_code" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/server_code.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="wip" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Feature_importance" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="$USER_HOME$/opt/anaconda3/envs/pythonProject3/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/wip.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.results" />
+        <item itemvalue="Python.server_code" />
+        <item itemvalue="Python.wip" />
+        <item itemvalue="Python.main" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="e2805ac9-9fa4-44f4-a6a8-3b46ed90cdc3" name="Changes" comment="" />
-      <created>1667720202478</created>
+      <changelist id="62d6154d-72ed-4651-a7f0-4b52a864813a" name="Changes" comment="" />
+      <created>1668074932950</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1667720202478</updated>
-      <workItem from="1667720204845" duration="5134000" />
-      <workItem from="1668092707524" duration="5041000" />
-      <workItem from="1668496444017" duration="841000" />
-      <workItem from="1668506787908" duration="741000" />
-      <workItem from="1668623084552" duration="98000" />
-      <workItem from="1668623209562" duration="2060000" />
-      <workItem from="1668636114823" duration="995000" />
-      <workItem from="1668699317504" duration="514000" />
-      <workItem from="1669233132351" duration="3761000" />
-      <workItem from="1669587104464" duration="258000" />
-      <workItem from="1670268726545" duration="90000" />
-      <workItem from="1670268822454" duration="185000" />
+      <updated>1668074932950</updated>
+      <workItem from="1668074935845" duration="35787000" />
+      <workItem from="1668150376810" duration="3148000" />
+      <workItem from="1668198839684" duration="1230000" />
+      <workItem from="1668421642962" duration="13142000" />
+      <workItem from="1668527853514" duration="6000" />
+      <workItem from="1668527863692" duration="10256000" />
+      <workItem from="1668550526527" duration="1406000" />
+      <workItem from="1668592393151" duration="1693000" />
+      <workItem from="1668606743757" duration="9384000" />
+      <workItem from="1668631589015" duration="576000" />
+      <workItem from="1668635930981" duration="1633000" />
+      <workItem from="1668689841421" duration="4582000" />
+      <workItem from="1668837998518" duration="14397000" />
+      <workItem from="1668884692243" duration="3398000" />
+      <workItem from="1668960584418" duration="17871000" />
+      <workItem from="1669039582856" duration="11605000" />
+      <workItem from="1669052987969" duration="7051000" />
+      <workItem from="1669062349819" duration="9191000" />
+      <workItem from="1669106001405" duration="2790000" />
+      <workItem from="1669123470275" duration="626000" />
+      <workItem from="1669133176752" duration="1324000" />
+      <workItem from="1669198288273" duration="674000" />
+      <workItem from="1669203012062" duration="5000" />
+      <workItem from="1669211156137" duration="4447000" />
+      <workItem from="1669224874012" duration="8855000" />
+      <workItem from="1669241111492" duration="2000000" />
+      <workItem from="1669282780503" duration="2163000" />
+      <workItem from="1669374777169" duration="4219000" />
+      <workItem from="1669389994367" duration="22133000" />
+      <workItem from="1669469455375" duration="1788000" />
+      <workItem from="1669487863912" duration="2771000" />
+      <workItem from="1669546770989" duration="993000" />
+      <workItem from="1669548801657" duration="17905000" />
+      <workItem from="1669584302989" duration="2858000" />
+      <workItem from="1669621259293" duration="7437000" />
+      <workItem from="1669808001273" duration="12659000" />
+      <workItem from="1669824559019" duration="5642000" />
+      <workItem from="1669901417342" duration="7202000" />
+      <workItem from="1669913917301" duration="5866000" />
+      <workItem from="1669927377644" duration="3488000" />
+      <workItem from="1669931425423" duration="12367000" />
+      <workItem from="1670007839737" duration="653000" />
+      <workItem from="1670076239571" duration="7888000" />
+      <workItem from="1670090942649" duration="15219000" />
+      <workItem from="1670152662539" duration="4000000" />
+      <workItem from="1670165166416" duration="15803000" />
+      <workItem from="1670193690524" duration="1459000" />
+      <workItem from="1670242649409" duration="6544000" />
+      <workItem from="1670253343058" duration="10368000" />
+      <workItem from="1670265634485" duration="2455000" />
+      <workItem from="1670275258014" duration="658000" />
+      <workItem from="1670313839982" duration="3354000" />
+      <workItem from="1670336950818" duration="7838000" />
+      <workItem from="1670397967666" duration="18228000" />
+      <workItem from="1670537130732" duration="360000" />
+      <workItem from="1670787922808" duration="6907000" />
+      <workItem from="1670829520884" duration="5970000" />
     </task>
-    <task id="LOCAL-00001" summary="created the repo, imported all the necessary code">
-      <created>1667725210885</created>
+    <task id="LOCAL-00001" summary="Plot for beta in Large T (samples) small P (number of features) added">
+      <created>1668080393956</created>
       <option name="number" value="00001" />
       <option name="presentableId" value="LOCAL-00001" />
       <option name="project" value="LOCAL" />
-      <updated>1667725210885</updated>
+      <updated>1668080393956</updated>
     </task>
-    <task id="LOCAL-00002" summary="expanded docstring for simulate_data.">
-      <created>1667725360810</created>
+    <task id="LOCAL-00002" summary="Starting to work on leave two out">
+      <created>1668092628744</created>
       <option name="number" value="00002" />
       <option name="presentableId" value="LOCAL-00002" />
       <option name="project" value="LOCAL" />
-      <updated>1667725360810</updated>
+      <updated>1668092628744</updated>
     </task>
-    <task id="LOCAL-00003" summary="created the main() function, added docstring to it">
-      <created>1667726349687</created>
+    <task id="LOCAL-00003" summary="implemented leave one and two out">
+      <created>1668153513441</created>
       <option name="number" value="00003" />
       <option name="presentableId" value="LOCAL-00003" />
       <option name="project" value="LOCAL" />
-      <updated>1667726349687</updated>
+      <updated>1668153513441</updated>
     </task>
-    <task id="LOCAL-00004" summary="added use_random_features boolean to main; also a TODO for Mohammad">
-      <created>1667727026189</created>
+    <task id="LOCAL-00004" summary="Vectorized leave two out and marchenko pastur">
+      <created>1668436495953</created>
       <option name="number" value="00004" />
       <option name="presentableId" value="LOCAL-00004" />
       <option name="project" value="LOCAL" />
-      <updated>1667727026189</updated>
+      <updated>1668436495953</updated>
     </task>
-    <task id="LOCAL-00005" summary="optimized code a bit">
-      <created>1668180838746</created>
+    <task id="LOCAL-00005" summary="Added vectorized leave one out, with leave two out tests">
+      <created>1668538867735</created>
       <option name="number" value="00005" />
       <option name="presentableId" value="LOCAL-00005" />
       <option name="project" value="LOCAL" />
-      <updated>1668180838746</updated>
+      <updated>1668538867735</updated>
     </task>
-    <task id="LOCAL-00006" summary="leave_two_out_estimator_vectorized_resolvent optimized">
-      <created>1668636406278</created>
+    <task id="LOCAL-00006" summary="Leave one out estimator fixed. True value functions added. Implemented in sample comparison for leave one out.">
+      <created>1668630821378</created>
       <option name="number" value="00006" />
       <option name="presentableId" value="LOCAL-00006" />
       <option name="project" value="LOCAL" />
-      <updated>1668636406278</updated>
+      <updated>1668630821378</updated>
     </task>
-    <task id="LOCAL-00007" summary="small tidy up of wip.py">
-      <created>1669242790764</created>
+    <task id="LOCAL-00007" summary="fixed error with plots, and tested the dumb and efficient algo are the same">
+      <created>1669232863231</created>
       <option name="number" value="00007" />
       <option name="presentableId" value="LOCAL-00007" />
       <option name="project" value="LOCAL" />
-      <updated>1669242790764</updated>
+      <updated>1669232863231</updated>
     </task>
-    <task id="LOCAL-00008" summary="small tidy up of wip.py, again">
-      <created>1669243880405</created>
+    <task id="LOCAL-00008" summary="Added leave out class and script to get plots">
+      <created>1669584257440</created>
       <option name="number" value="00008" />
       <option name="presentableId" value="LOCAL-00008" />
       <option name="project" value="LOCAL" />
-      <updated>1669243880405</updated>
+      <updated>1669584257440</updated>
     </task>
-    <task id="LOCAL-00009" summary="added the function solving the master equation for m(-z;c)">
-      <created>1670268871206</created>
+    <task id="LOCAL-00009" summary="code cleaned up, plotting functions added, true values can be computed in leaveout class">
+      <created>1670007886185</created>
       <option name="number" value="00009" />
       <option name="presentableId" value="LOCAL-00009" />
       <option name="project" value="LOCAL" />
-      <updated>1670268871206</updated>
+      <updated>1670007886185</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="optimal non-linear shrinkage added, class changed a bit">
+      <created>1670152847821</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1670152847821</updated>
+    </task>
+    <task id="LOCAL-00011" summary="master equation added">
+      <created>1670269235151</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1670269235151</updated>
+    </task>
+    <task id="LOCAL-00012" summary="master equation added">
+      <created>1670269259174</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1670269259174</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -154,16 +371,22 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="created the repo, imported all the necessary code" />
-    <MESSAGE value="expanded docstring for simulate_data." />
-    <MESSAGE value="created the main() function, added docstring to it" />
-    <MESSAGE value="added use_random_features boolean to main; also a TODO for Mohammad" />
-    <MESSAGE value="optimized code a bit" />
-    <MESSAGE value="leave_two_out_estimator_vectorized_resolvent optimized" />
-    <MESSAGE value="small tidy up of wip.py" />
-    <MESSAGE value="small tidy up of wip.py, again" />
-    <MESSAGE value="added the function solving the master equation for m(-z;c)" />
-    <option name="LAST_COMMIT_MESSAGE" value="added the function solving the master equation for m(-z;c)" />
+    <MESSAGE value="Plot for beta in Large T (samples) small P (number of features) added" />
+    <MESSAGE value="Starting to work on leave two out" />
+    <MESSAGE value="implemented leave one and two out" />
+    <MESSAGE value="Vectorized leave two out and marchenko pastur" />
+    <MESSAGE value="Added vectorized leave one out, with leave two out tests" />
+    <MESSAGE value="Leave one out estimator fixed. True value functions added. Implemented in sample comparison for leave one out." />
+    <MESSAGE value="Added grid of plots, with various estimators" />
+    <MESSAGE value="fixed error with plots, and tested the dumb and efficient algo are the same" />
+    <MESSAGE value="Added leave out class and script to get plots" />
+    <MESSAGE value="code cleaned up, plotting functions added, true values can be computed in leaveout class" />
+    <MESSAGE value="optimal non-linear shrinkage added, class changed a bit" />
+    <MESSAGE value="master equation added" />
+    <option name="LAST_COMMIT_MESSAGE" value="master equation added" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/Feature_importance$main.coverage" NAME="main Coverage Results" MODIFIED="1668075103143" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Feature_importance$wip.coverage" NAME="wip Coverage Results" MODIFIED="1670089485824" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
