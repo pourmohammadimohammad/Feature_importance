@@ -5,8 +5,6 @@ from helpers.random_features import RandomFeatures
 import matplotlib.pyplot as plt
 
 
-
-
 def run_experiment(seed: int,
                    sample_size: int,
                    number_features_: int,
@@ -100,7 +98,6 @@ if __name__ == '__main__':
     activation = 'linear'
     number_neurons = 1
     shrinkage_list = np.linspace(0.1, 10, 100)
-
 
     seed = 0
     run_experiment(seed=seed,
