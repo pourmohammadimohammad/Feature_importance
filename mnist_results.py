@@ -38,71 +38,51 @@ def voc_plots(experiments, title):
     print('Done')
 
 
-def optimal_vs_oos_simple_plot(experiments, exp_type, optimal_shrinkage=False):
+def optimal_vs_oos_simple_plot(experiments, exp_type,g):
     # needs to be changed to acomodate new efficient par class
     models = experiments[exp_type]
-    c_list = [np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2) for model in models]
+    c_list = [np.round(model.par.data.c, 2) for model in models]
     s = sorted(c_list)
     my_order = [s.index(x) for x in c_list]
     models = [models[i] for i in my_order]
     ax_legend = []
-    [ax_legend.append(f'c = {np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2)} OOS') for model in
+    [ax_legend.append(f'c = {np.round(model.par.data.c , 2)} OOS') for model in
      models]
-    [ax_legend.append(f'c = {np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2)} INS') for model
+    [ax_legend.append(f'c = {np.round(model.par.data.c , 2)} INS') for model
      in models]
-    [ax_legend.append(f'c = {np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2)} Optimal') for model
+    [ax_legend.append(f'c = {np.round(model.par.data.c , 2)} Optimal') for model
      in models]
-    [ax_legend.append(f'c = {np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2)} Inf Opt') for model
+    [ax_legend.append(f'c = {np.round(model.par.data.c , 2)} Inf Opt') for model
      in models]
     shrinkage_list = models[0].par.plo.shrinkage_list
     ones = np.ones(models[0].par.plo.shrinkage_list.shape)
     colors = []
     [colors.append(f'C{i}') for i in range(len(models))]
-    if optimal_shrinkage:
-        optimal_shrinkage = []
-        [optimal_shrinkage.append(
-            np.round(model.par.simulated_data.c / model.par.plo.train_frac, 2) / model.par.simulated_data.b_star) for
-            model
-            in models]
-        [ax_legend.append(f'c/b_* = {op}') for op
-         in optimal_shrinkage]
 
-    names = ['sharpe', 'mse']
-    for name in names:
-        [plt.plot(shrinkage_list, models[i].oos_perf_est[name], color=colors[i])
-         for i in range(len(models))]
-        [plt.plot(shrinkage_list, models[i].ins_perf_est[name], color=colors[i], linestyle='dotted')
-         for i in range(len(models))]
+    [plt.plot(shrinkage_list, models[i].oos_perf_est['mse'], color=colors[i])
+     for i in range(len(models))]
+    [plt.plot(shrinkage_list, models[i].ins_perf_est['mse'], color=colors[i], linestyle='dotted')
+     for i in range(len(models))]
 
-        if name == 'sharpe':
-            [plt.plot(shrinkage_list, ones * models[i].oos_optimal_sharpe
-                      , color=colors[i], linestyle='dashed')
-             for i in range(len(models))]
-            [plt.plot(shrinkage_list, ones * models[i].infeasible_oos_optimal_sharpe
-                      , color=colors[i], linestyle='dashdot')
-             for i in range(len(models))]
 
-        if name == 'mse':
-            [plt.plot(shrinkage_list, ones * models[i].oos_optimal_mse
-                      , color=colors[i], linestyle='dashed')
-             for i in range(len(models))]
-            [plt.plot(shrinkage_list, ones * models[i].infeasible_oos_optimal_mse
-                      , color=colors[i], linestyle='dashdot')
-             for i in range(len(models))]
+    [plt.plot(shrinkage_list, ones * models[i].oos_optimal_mse
+              , color=colors[i], linestyle='dashed')
+     for i in range(len(models))]
+    [plt.plot(shrinkage_list, ones * models[i].infeasible_oos_optimal_mse
+              , color=colors[i], linestyle='dashdot')
+     for i in range(len(models))]
 
-        if optimal_shrinkage:
-            [plt.axvline(x=optimal_shrinkage[i], color=colors[i], linestyle='dotted') for i in range(len(models))]
+    plt.title(f'g = {round(g,2)}')
+    plt.legend(ax_legend, loc='upper right')
+    plt.xlabel('z')
+    plt.ylabel('MSE')
+    plt.xscale('log')
+    if len(models) == 1:
+        plt.savefig('plots/' + exp_type + '.jpg')
+    else:
+        plt.savefig('plots/' + exp_type + '.jpg')
 
-        plt.title(exp_type)
-        plt.legend(ax_legend, loc='upper right')
-        plt.xlabel('z')
-        plt.ylabel(name)
-        if len(models) == 1:
-            plt.savefig('plots/' + name + exp_type.replace(" ", "") + str(models[0].par.simulated_data.c) + '.jpg')
-        else:
-            plt.savefig('plots/' + name + exp_type.replace(" ", "") + '.jpg')
-
-        plt.show()
+    plt.show()
 
 
 def ins_vs_oos_weights_plot(experiments, exp_type):
@@ -212,16 +192,16 @@ def load_stuff(folder_to_check, f):
 def plot_stuff(f):
     if 'leave_out.p' in os.listdir(f'res/{folder_to_check}/{f}/'):
         loo = load_stuff(folder_to_check, f)
-        # mean_comparison(loo)
+        loo.par.update_mnist_basic_title()
         experiments = {loo.par.experiment_title: [loo]}
-        optimal_vs_oos_simple_plot(experiments, loo.par.experiment_title)
-        ins_vs_oos_weights_plot(experiments, loo.par.experiment_title)
+        optimal_vs_oos_simple_plot(experiments, loo.par.experiment_title, loo.par.plo.g)
+        # ins_vs_oos_weights_plot(experiments, loo.par.name)
         # ins_vs_oos_m_plot(experiments, loo.par.experiment_title, z_list)
 
 
 if __name__ == "__main__":
 
-    folder_to_check = 'data_style'
+    folder_to_check = 'mnist_first_test'
     big_data = True
     os.makedirs('plots', exist_ok=True)
     gl = os.listdir(f'res/{folder_to_check}/')

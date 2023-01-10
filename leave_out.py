@@ -8,7 +8,7 @@ from main import *
 from rf.RandomFeaturesGenerator import RandomFeaturesGenerator
 from helpers.random_features import RandomFeatures
 import matplotlib.pyplot as plt
-from tqdm import tqdm # use for showing progress in loops
+from tqdm import tqdm  # use for showing progress in loops
 from helpers.marcenko_pastur import MarcenkoPastur
 from parameters import *
 
@@ -16,50 +16,60 @@ from parameters import *
 # mohammad_is_wrong = RandomFeatures.naive_linear_single_underlying()
 
 class LeaveOut:
+    def __init__(self, par: Params = None, labels: np.ndarray = None, features: np.ndarray = None):
 
-    def __init__(self, par:Params = None, labels:np.ndarray = None, features:np.ndarray = None):
-        self.par = par
-        self.oos_m_mse = None
-        self.oos_m_sharpe = None
-        self.oos_r_z = None
-        self.oos_pi_z = None
+        # self.oos_m_mse = None #  infeasable oos mse denominator for optimal mse weights
         self.ins_m_mse = None
-        self.ins_m_sharpe = None
-        self.m_z_c = None
-        self.var_true = None
-        self.xi_1 = None
-        self.oos_optimal_sharpe = None
-        self.oos_optimal_mse = None
-        self.beta_hat_optimal_mse = None
-        self.beta_hat_optimal_sharpe = None
-        self.pi_ins = None
-        self.ret_vec_ins = None
-        self.times = None
-        self.labels_oos_list = None
-        self.estimator_out_of_sample_cumulative = None
-        self.features_oos_list = None
-        self.true_value_beta_eq_176 = None
-        self.true_value_sigma_beta_eq_176 = None
-        self.true_value_limit_eq_176 = None
+        self.oos_m_mse = None
+        self.w_mse_ins = None
+        self.w_mse_oos = None
         self.mean_true = None
-        self.xi_beta_1 = None
+        self.oos_m_sharpe = None  # infeasable oos sharpe denominator for optimal sharpe weights
+        # self.oos_r_z = None # infeasable oos return for shrunk strategy
+        # self.oos_pi_z = None # out of sample pi
+        # self.ins_m_mse = None  ins mse denominator for optimal mse weights
+        self.ins_m_sharpe = None  # ins sharpe denominator for optimal sharpe weights
+        self.m_z_c = None  # features empirical eigenvalue distribution
         self.beta_eigenvalues = None
-        self.true_value_mean = None
-        self.true_value_var = None
-        self.oos_perf_est = None
-        self.ins_perf_est = None
-        self.pi_avg = None
-        self.beta_hat = None
-        self.eigenvectors = None
-        self.eigenvalues = None
-        self.features_oos = None
-        self.features_ins = None
-        self.labels_oos = None
-        self.labels_ins = None
         self.psi_eigenvalues = None
-        self.beta_dict = None
-        self.features = features
-        self.labels = labels
+        self.w_sharpe_ins = None
+        self.w_sharpe_oos = None
+
+        self.par = par  # all parameters in the model
+        self.labels = labels  # all labels
+        self.features = features  # all features
+        self.features_ins = None  # in sample features
+        self.labels_ins = None  # in sample labels
+        self.eigenvectors = None  # eigenvectors of in-sample features
+        self.eigenvalues = None  # eigenvalues of in-sample features
+        self.ins_perf_est = None  # in sample performance
+        self.beta_hat = None  # beta hat estimated with in sample data
+        self.labels_oos = None  # out of sample labels
+        self.features_oos = None  # out of sample features
+        self.oos_perf_est = None  # out of sample performance
+
+        self.infeasible_oos_optimal_mse = None  # infeasible optimal mse
+        self.infeasible_oos_optimal_sharpe = None  # infeasible optimal sharpe
+        self.oos_optimal_mse = None  # feasible optimal mse
+        self.oos_optimal_sharpe = None  # feasible optimal sharpe
+        self.beta_hat_optimal_mse = None  # the optimal beta for mse
+        self.beta_hat_optimal_sharpe = None  # the optimal beta for sharpe
+
+        # growing T fields
+        self.times = None  # times for the growing T plots
+        self.labels_oos_list = None  # the list of labels for growing T
+        self.features_oos_list = None  # the list of features for growing T
+        self.estimator_out_of_sample_cumulative = None  # the list of estimators for growing T
+
+    def add_eigen_distribution(self, beta_eigenvalues, psi_eigenvalues):
+        self.beta_eigenvalues = beta_eigenvalues
+        self.psi_eigenvalues = psi_eigenvalues
+
+    def add_splitted_data(self, labels_oos, labels_ins, features_oos, features_ins):
+        self.labels_ins = labels_ins
+        self.labels_oos = labels_oos
+        self.features_ins = features_ins
+        self.features_oos = features_oos
 
     def save(self, save_dir, file_name='/leave_out.p'):
         # simple save function that allows loading of deprecated parameters object
@@ -153,39 +163,62 @@ class LeaveOut:
                                             shrinkage_list=self.par.plo.shrinkage_list)
 
     def ins_performance(self):
-        self.ins_perf_est, self.ret_vec_ins, self.pi_ins, self.pi_avg = self.leave_one_out_estimator_beta(
+        # if you need the optimal you must calculate in-sample performance
+        self.ins_perf_est, ret_vec_ins, pi_ins, pi_avg = self.leave_one_out_estimator_beta(
             labels=self.labels_ins,
             features=self.features_ins,
             eigenvalues=self.eigenvalues,
             eigenvectors=self.eigenvectors,
             beta_hat=self.beta_hat,
-            shrinkage_list=self.par.plo.shrinkage_list)
+            shrinkage_list=self.par.plo.shrinkage_list,
+            classification=self.par.plo.classification)
 
-        w_sharpe, w_mse, self.ins_m_sharpe, self.ins_m_mse = self.optimal_weights(self.ret_vec_ins,
-                                                                                  self.pi_ins)
 
-        self.beta_hat_optimal_sharpe, self.beta_hat_optimal_mse, = self.optimal_shrinkage(w_sharpe=w_sharpe,
-                                                                                          w_mse=w_mse,
+        self.w_sharpe_ins, self.w_mse_ins, self.ins_m_sharpe, self.ins_m_mse = self.optimal_weights(ret_vec_ins,
+                                                                                               pi_ins)
+
+        self.beta_hat_optimal_sharpe, self.beta_hat_optimal_mse, = self.optimal_shrinkage(w_sharpe=self.w_sharpe_ins,
+                                                                                          w_mse=self.w_mse_ins,
                                                                                           beta_hat=self.beta_hat)
 
     def oos_performance(self, features_oos=None, labels_oos=None):
         features_oos = self.features_oos if features_oos is None else features_oos
         labels_oos = self.labels_oos if labels_oos is None else labels_oos
 
-        self.oos_perf_est, self.oos_pi_z, self.oos_r_z = self.performance_oos(beta_hat=self.beta_hat,
-                                                                              labels_out_of_sample=labels_oos,
-                                                                              features_out_of_sample=features_oos)
-        
-        w_sharpe, w_mse, self.oos_m_sharpe, self.oos_m_mse = self.optimal_weights(self.oos_r_z,
-                                                                                  self.oos_pi_z)
+        self.oos_perf_est, oos_pi_z, oos_r_z = self.performance_oos(beta_hat=self.beta_hat,
+                                                                    labels_out_of_sample=labels_oos,
+                                                                    features_out_of_sample=features_oos,
+                                                                    classification=self.par.plo.classification)
+
+        self.w_sharpe_oos, self.w_mse_oos, self.oos_m_sharpe, self.oos_m_mse = self.optimal_weights(oos_r_z,
+                                                                                               oos_pi_z,
+                                                                                               self.par.plo.g)
+
+        # infeasible beta obtained with oos data
+        beta_hat_optimal_sharpe, beta_hat_optimal_mse, = self.optimal_shrinkage(w_sharpe=self.w_sharpe_oos,
+                                                                                w_mse=self.w_mse_oos,
+                                                                                beta_hat=self.beta_hat)
+
+        self.infeasible_oos_optimal_sharpe = self.performance_oos(beta_hat=beta_hat_optimal_sharpe,
+                                                                  labels_out_of_sample=labels_oos,
+                                                                  features_out_of_sample=features_oos,
+                                                                  classification=self.par.plo.classification)[0][
+            'sharpe']
+
+        self.infeasible_oos_optimal_mse = self.performance_oos(beta_hat=beta_hat_optimal_mse,
+                                                               labels_out_of_sample=labels_oos,
+                                                               features_out_of_sample=features_oos,
+                                                               classification=self.par.plo.classification)[0]['mse']
 
         self.oos_optimal_sharpe = self.performance_oos(beta_hat=self.beta_hat_optimal_sharpe,
                                                        labels_out_of_sample=labels_oos,
-                                                       features_out_of_sample=features_oos)[0]['sharpe']
+                                                       features_out_of_sample=features_oos,
+                                                       classification=self.par.plo.classification)[0]['sharpe']
 
         self.oos_optimal_mse = self.performance_oos(beta_hat=self.beta_hat_optimal_mse,
                                                     labels_out_of_sample=labels_oos,
-                                                    features_out_of_sample=features_oos)[0]['mse']
+                                                    features_out_of_sample=features_oos,
+                                                    classification=self.par.plo.classification)[0]['mse']
 
     def oos_performance_growing_sample(self, num_parts=4):
         self.test_parse_split(num_parts)
@@ -206,79 +239,80 @@ class LeaveOut:
 
         self.estimator_out_of_sample_cumulative = estimator_out_of_sample_cumulative
 
-    def calculate_true_value(self):
-        self.true_value_mean = LeaveOut.leave_one_out_true_value(beta_dict=self.beta_dict,
-                                                                 psi_eigenvalues=self.psi_eigenvalues,
-                                                                 eigenvalues=self.eigenvalues,
-                                                                 eigenvectors=self.eigenvectors,
-                                                                 shrinkage_list=self.par.plo.shrinkage_list,
-                                                                 noise_size_=self.par.simulated_data.noise_size)
+    # def calculate_true_value(self):
+    #     self.true_value_mean = LeaveOut.leave_one_out_true_value(beta_dict=self.beta_dict,
+    #                                                              psi_eigenvalues=self.psi_eigenvalues,
+    #                                                              eigenvalues=self.eigenvalues,
+    #                                                              eigenvectors=self.eigenvectors,
+    #                                                              shrinkage_list=self.par.plo.shrinkage_list,
+    #                                                              noise_size_=self.par.simulated_data.noise_size)
 
-    def theoretical_mean_var(self):
+    def theoretical_mean(self):
 
-        c = self.par.simulated_data.c / self.train_frac
-
+        # xi_beta has some problems
+        c = self.par.simulated_data.c / self.par.plo.train_frac
         m_z_c = self.empirical_stieltjes(self.eigenvalues, self.par.simulated_data.p, self.par.plo.shrinkage_list)
 
-        self.m_z_c = m_z_c
+        # try alternate method for calculating with m
+        xi_beta_1 = self.xi_k_simple(psi_eigenvalues=self.psi_eigenvalues,
+                                     beta_eigenvalues=self.beta_eigenvalues,
+                                     m_z_c=m_z_c)
+        psi_beta = np.sum(self.beta_eigenvalues * self.psi_eigenvalues)
 
-        xi_beta_1 = self.xi_k_true(c=c,
-                                   psi_eigenvalues=self.psi_eigenvalues,
-                                   beta_eigenvalues=self.beta_eigenvalues,
-                                   shrinkage_list=self.par.plo.shrinkage_list,
-                                   m_z_c=m_z_c)
+        mean_true = [psi_beta - self.par.plo.shrinkage_list[i] * xi_beta_1[i] for i in
+                     range(len(self.par.plo.shrinkage_list))]
+        self.mean_true = mean_true
 
-        xi_beta_0 = self.xi_k_true(l=0,
-                                   c=c,
-                                   psi_eigenvalues=self.psi_eigenvalues,
-                                   beta_eigenvalues=self.beta_eigenvalues,
-                                   shrinkage_list=self.par.plo.shrinkage_list,
-                                   m_z_c=m_z_c)
+    #
+    #     xi_beta_0 = self.xi_k_true(l=0,
+    #                                c=c,
+    #                                psi_eigenvalues=self.psi_eigenvalues,
+    #                                beta_eigenvalues=self.beta_eigenvalues,
+    #                                shrinkage_list=self.par.plo.shrinkage_list,
+    #                                m_z_c=m_z_c)
+    #
+    #     derivative_xi_beta_0 = self.xi_k_true(l=0,
+    #                                           c=c,
+    #                                           d=2,
+    #                                           psi_eigenvalues=self.psi_eigenvalues,
+    #                                           beta_eigenvalues=self.beta_eigenvalues,
+    #                                           shrinkage_list=self.par.plo.shrinkage_list,
+    #                                           m_z_c=m_z_c)
+    #
+    #     xi_1 = self.xi_k_true(c=c,
+    #                           psi_eigenvalues=self.psi_eigenvalues,
+    #                           shrinkage_list=self.par.plo.shrinkage_list,
+    #                           m_z_c=m_z_c)
+    #
+    #     derivative_xi_1 = self.xi_k_true(c=c,
+    #                                      d=2,
+    #                                      psi_eigenvalues=self.psi_eigenvalues,
+    #                                      shrinkage_list=self.par.plo.shrinkage_list,
+    #                                      m_z_c=m_z_c)
+    #
+    #     #
+    #     # normalizer = self.par.simulated_data.noise_size ** 2 + psi_beta
+    #     #
 
-        derivative_xi_beta_0 = self.xi_k_true(l=0,
-                                              c=c,
-                                              d=2,
-                                              psi_eigenvalues=self.psi_eigenvalues,
-                                              beta_eigenvalues=self.beta_eigenvalues,
-                                              shrinkage_list=self.par.plo.shrinkage_list,
-                                              m_z_c=m_z_c)
-
-        xi_1 = self.xi_k_true(c=c,
-                              psi_eigenvalues=self.psi_eigenvalues,
-                              shrinkage_list=self.par.plo.shrinkage_list,
-                              m_z_c=m_z_c)
-
-        derivative_xi_1 = self.xi_k_true(c=c,
-                                         d=2,
-                                         psi_eigenvalues=self.psi_eigenvalues,
-                                         shrinkage_list=self.par.plo.shrinkage_list,
-                                         m_z_c=m_z_c)
-
-        # psi_beta = np.sum(self.beta_eigenvalues * self.psi_eigenvalues)
-        #
-        # normalizer = self.par.simulated_data.noise_size ** 2 + psi_beta
-        #
-        # mean_true = [psi_beta - self.par.plo.shrinkage_list[i] * xi_beta_1[i] for i in
-        #              range(len(self.par.plo.shrinkage_list))]
-        #
-        # xi_term = [xi_1[i] - self.par.plo.shrinkage_list[i] * deriplo
-        #            for i in range(len(self.par.plo.shrinkage_list))]
-        # xi_beta_term = [xi_beta_0[i] - self.par.plo.shrinkage_list[i] * derivative_xi_beta_0[i]
-        #                 for i in range(len(self.par.plo.shrinkage_list))]
-        #
-        # denominator = 1 / (1 - c + c * self.par.plo.shrinkage_list * m_z_c)
-        #
-        # params = [denominator[i] * self.par.plo.shrinkage_list[i] for i in range(len(self.par.plo.shrinkage_list))]
-        #
-        # second_term = [(params[i] ** 2) * xi_beta_term[i]
-        #                - self.par.plo.shrinkage_list[i] * xi_beta_1[i]
-        #                for i in range(len(self.par.plo.shrinkage_list))]
-        #
-        # var_true = [normalizer * (mean_true[i] + second_term[i] + self.par.simulated_data.noise_size * xi_term[i])
-        #             for i in range(len(self.par.plo.shrinkage_list))]
-
-        # self.mean_true = mean_true
-        # self.var_true = var_true
+    #     #
+    #     # xi_term = [xi_1[i] - self.par.plo.shrinkage_list[i] * deriplo
+    #     #            for i in range(len(self.par.plo.shrinkage_list))]
+    #     # xi_beta_term = [xi_beta_0[i] - self.par.plo.shrinkage_list[i] * derivative_xi_beta_0[i]
+    #     #                 for i in range(len(self.par.plo.shrinkage_list))]
+    #     #
+    #     # denominator = 1 / (1 - c + c * self.par.plo.shrinkage_list * m_z_c)
+    #     #
+    #     # params = [denominator[i] * self.par.plo.shrinkage_list[i] for i in range(len(self.par.plo.shrinkage_list))]
+    #     #
+    #     # second_term = [(params[i] ** 2) * xi_beta_term[i]
+    #     #                - self.par.plo.shrinkage_list[i] * xi_beta_1[i]
+    #     #                for i in range(len(self.par.plo.shrinkage_list))]
+    #     #
+    #     # var_true = [normalizer * (mean_true[i] + second_term[i] + self.par.simulated_data.noise_size * xi_term[i])
+    #     #             for i in range(len(self.par.plo.shrinkage_list))]
+    #
+    #     # self.mean_true = mean_true
+    #     # self.var_true = var_true
 
     def True_value_eq_176(self, data_type):
 
@@ -296,8 +330,8 @@ class LeaveOut:
                                         in inverse]
         true_value_beta_eq_176 = [(self.beta_dict[0].reshape(1, -1) @ (self.psi_eigenvalues * i) @ covariance @
                                    self.beta_dict[0].reshape(-1, 1))[0] for i in inverse]
-        self.true_value_sigma_beta_eq_176 = true_value_sigma_beta_eq_176
-        self.true_value_beta_eq_176 = true_value_beta_eq_176
+
+        return true_value_sigma_beta_eq_176, true_value_beta_eq_176
 
     @staticmethod
     def smart_eigenvalue_decomposition(features: np.ndarray):
@@ -420,7 +454,8 @@ class LeaveOut:
                                      eigenvalues: np.ndarray,
                                      eigenvectors: np.ndarray,
                                      beta_hat: np.ndarray,
-                                     shrinkage_list: np.ndarray) -> float:
+                                     shrinkage_list: np.ndarray,
+                                     classification: int = False) -> float:
         """
         # Lemma 30: Vectorized Leave one out
         # Implement leave one out estimator
@@ -444,10 +479,17 @@ class LeaveOut:
                                                      w_diag=w_diag,
                                                      shrinkage_list=shrinkage_list)
 
+        if classification:
+            for i in range(len(shrinkage_list)):
+                pi[i][pi[i] > 0] = 1
+                pi[i][pi[i] < 0] = -1
+
+        [labels * pi[i] for i in range(len(shrinkage_list))]
+
         # now, we compute R_{tau+1}(z) * pi_{times,tau} as a vector. The list is indexed by z while the vector is indexed by tau
         ret_vec = [labels * pi[i] for i in range(len(shrinkage_list))]
 
-        # Calculate strategy performance using insample dat
+        # Calculate strategy performance using in-sample dat
         estimator_perf = LeaveOut.estimator_performance(ret_vec, pi, labels_squared)
 
         # do an average over all pi_T_tau do get the \hat \pi estimator
@@ -472,7 +514,8 @@ class LeaveOut:
     @staticmethod
     def performance_oos(beta_hat: np.ndarray,
                         labels_out_of_sample: np.ndarray,
-                        features_out_of_sample: np.ndarray):
+                        features_out_of_sample: np.ndarray,
+                        classification: int = False):
         """
         Use beta estimate to test out of sample performance
         :param beta_hat:
@@ -485,10 +528,16 @@ class LeaveOut:
 
         if type(beta_hat) == list:
             pi = [features_out_of_sample @ b for b in beta_hat]
+            if classification:
+                for i in range(len(beta_hat)):
+                    pi[i][pi[i] > 0] = 1
+                    pi[i][pi[i] < 0] = -1
             estimator_list = [p * labels_out_of_sample for p in pi]
-
         else:
             pi = features_out_of_sample @ beta_hat
+            if classification:
+                pi[pi > 0] = 1
+                pi[pi < 0] = -1
             estimator_list = pi * labels_out_of_sample
 
         return LeaveOut.estimator_performance(estimator_list, pi, labels_squared), pi, estimator_list
@@ -526,7 +575,7 @@ class LeaveOut:
 
             estimator_list_pi = [np.mean(p) for p in pi]
 
-            estimator_list_sharpe = [estimator_list_mean[i] / estimator_list_std[i]
+            estimator_list_sharpe = [estimator_list_mean[i] / np.sqrt(estimator_list_var[i])
                                      for i in range(len(estimator_list))]
 
             estimator_list_mse = [labels_squared - 2 * estimator_list_mean[i] + estimator_list_pi_2[i]
@@ -632,6 +681,18 @@ class LeaveOut:
         return true_values_mean
 
     @staticmethod
+    def xi_k_simple(psi_eigenvalues: np.ndarray,
+                    m_z_c: np.ndarray,
+                    beta_eigenvalues: np.ndarray = None,
+                    k: int = 1):
+        if beta_eigenvalues is None:
+            xi = [(psi_eigenvalues ** k) * m for m in m_z_c]
+        else:
+            xi = [beta_eigenvalues * (psi_eigenvalues ** k) * m for m in m_z_c]
+
+        return xi
+
+    @staticmethod
     def xi_k_true(c: float,
                   psi_eigenvalues: np.ndarray,
                   shrinkage_list: np.ndarray,
@@ -682,7 +743,8 @@ class LeaveOut:
 
     @staticmethod
     def optimal_weights(ret_vec_ins: list,
-                        pi_ins: list):
+                        pi_ins: list,
+                        shrinkage_amount: float = 0.25):
 
         l = len(ret_vec_ins)
         ret_mat_for_z = np.array(ret_vec_ins).reshape(l, -1)
@@ -692,11 +754,14 @@ class LeaveOut:
 
         pi_mat_for_z = np.array(pi_ins).reshape(l, -1)
 
+        # shrinkage for inversion
+        shrinkage = shrinkage_amount * np.eye(l)
+
         # average pi times pi for different combinations of the z grid
-        m_mse = pi_mat_for_z @ pi_mat_for_z.T
+        m_mse = pi_mat_for_z @ pi_mat_for_z.T + shrinkage
 
         # average strategy return times strategy return for different combinations of the z grid
-        m_sharpe = ret_mat_for_z @ ret_mat_for_z.T
+        m_sharpe = ret_mat_for_z @ ret_mat_for_z.T + shrinkage
 
         # weights for mse
         w_mse = np.linalg.pinv(m_mse) @ v
@@ -717,3 +782,28 @@ class LeaveOut:
         beta_hat_optimal_mse = (beta_hat_mat @ w_mse).reshape(-1, 1)
 
         return beta_hat_optimal_sharpe, beta_hat_optimal_mse
+
+
+class Performance:
+    # a light class that saved essential information from leave one out
+    def __init__(self):
+        self.instability_mse = None
+        self.instability_sharpe = None
+        self.c = None
+        self.oos_optimal_mse = None
+        self.oos_optimal_sharpe = None
+        self.infeasible_oos_optimal_mse = None
+        self.infeasible_oos_optimal_sharpe = None
+
+    def copy_performance(self, loo: LeaveOut):
+        self.c = np.round(loo.par.simulated_data.c / loo.par.plo.train_frac, 2)
+        self.oos_optimal_mse = loo.oos_optimal_mse
+        self.oos_optimal_sharpe = loo.oos_optimal_sharpe
+        self.infeasible_oos_optimal_mse = loo.infeasible_oos_optimal_mse
+        self.infeasible_oos_optimal_sharpe = loo.infeasible_oos_optimal_sharpe
+        self.instability_sharpe = self.calculate_instability(loo.w_sharpe_ins)
+        self.instability_mse = self.calculate_instability(loo.w_mse_ins)
+
+    @staticmethod
+    def calculate_instability(stuff: List):
+        return (max(stuff) - min(stuff)) / np.mean(stuff)

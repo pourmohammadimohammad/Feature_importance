@@ -4,22 +4,23 @@ import numpy as np
 import pandas as pd
 import socket
 
+
 # parameters
 # Created in the name of Antoine Didisheim, by his disiple at 6.12.22
 # job: store default parameters used throughout the projects in single .py
-
 
 
 ##################
 # Constant
 ##################
 
-class DataUsed (Enum):
+class DataUsed(Enum):
     INS = 1
     OOS = 2
     TOTAL = 3
 
-class Estimators (Enum):
+
+class Estimators(Enum):
     MEAN = 1
     STD = 2
     PI = 3
@@ -27,12 +28,11 @@ class Estimators (Enum):
     R_2 = 5
     MSE = 6
 
+
 class Constant:
     MAX_OPT = 1000
     GRID_SIZE = 1000
     BASE_DIR = './'
-
-
 
 
 ##################
@@ -42,28 +42,53 @@ class Constant:
 class ParamsLeaveOut:
     def __init__(self):
         self.train_frac = 0.5
-        self.shrinkage_list = np.linspace(0.1, 10, 100)
+        self.shrinkage_list = np.logspace(-6, 3, 20)
+        self.g = 10**(-5)
+        self.classification = False
 
+
+class DataParams:
+    def __init__(self):
+        self.digits = [7, 9]
+        self.crop_int = 25
+        self.c = 0.3
+        self.activation = "cos"
+        self.seed = 0
+        self.train_sub_sample = 2000
+        self.test_sub_sample = 1000
+        self.k = 20
+        self.norm_band_width = 1
+        self.scale = 0
+        self.gamma = 1
+
+    def get_name_raw(self):
+        n = f'digits{self.digits}crop{self.crop_int}scale{self.scale}'
+        return n
+
+    def get_name(self):
+        n = f'digits{self.digits}crop{self.crop_int}c{self.c}'
+        return n
 
 
 class SimulatedDataParams:
     def __init__(self):
         self.alpha = 1
-        self.b_star = 0.01
+        self.b_star = 0.2
         self.seed = 0
         self.beta_and_psi_link = 2
-        self.noise_size = 0
+        self.noise_size = 1
         self.activation = 'linear'
         self.number_neurons = 1
         self.t = 100
-        self.c = 2
+        self.model_c = 1
+        self.c = 1
         self.p = int(self.c * self.t)
-        self.simple_beta = False
+        self.gamma = 1
+        self.random_features = False
 
     def get_name(self):
-        n = f'T{self.t}C{str(self.c)}b_star{self.b_star}l{self.beta_and_psi_link }alpha{self.alpha}'
+        n = f'T{self.t}C{str(self.c)}b_star{self.b_star}l{self.beta_and_psi_link}alpha{self.alpha}rf{self.random_features}activation{self.activation}neurons{self.number_neurons} '
         return n
-
 
 
 # store all parameters into a single object
@@ -74,16 +99,23 @@ class Params:
         self.seed = 12345
         self.plo = ParamsLeaveOut()
         self.simulated_data = SimulatedDataParams()
+        self.data = DataParams()
         self.process = None
         self.update_model_name()
         self.experiment_title = None
 
+    def update_mnist_basic_title(self):
+        n = self.name_detail
+        self.experiment_title = f'c{self.data.c}crop{self.data.crop_int}seed{self.data.seed}g{self.plo.g}'
+        self.name = n + '/' + self.experiment_title
+
     def update_model_name(self):
         n = self.name_detail
         n += f'/b_star{self.simulated_data.b_star}beta_and_psi_link{self.simulated_data.beta_and_psi_link}' \
-             f'alpha{self.simulated_data.alpha}c{self.simulated_data.c}t{self.simulated_data.t}'
-        self.experiment_title = f'T={int(self.plo.train_frac * self.simulated_data.t) }, T_1={int((1-self.plo.train_frac) * self.simulated_data.t) }  ' \
-                                f'\n b_*={self.simulated_data.b_star} & l={self.simulated_data.beta_and_psi_link} & a={self.simulated_data.alpha} '
+             f'alpha{self.simulated_data.alpha}c{self.simulated_data.c}t{self.simulated_data.t}true_c{self.simulated_data.model_c}'
+        self.experiment_title = f'True c = {self.simulated_data.model_c}, T={int(self.plo.train_frac * self.simulated_data.t)}, T_1={int((1 - self.plo.train_frac) * self.simulated_data.t)}  ' \
+                                f'\n b_*={self.simulated_data.b_star} & l={self.simulated_data.beta_and_psi_link} & a={self.simulated_data.alpha} ' \
+                                f'\n activation={self.simulated_data.activation} & neurons={self.simulated_data.number_neurons}  '
         self.name = n
 
     def print_values(self):
@@ -168,7 +200,3 @@ class Params:
                         no_old_version_bug = False
                         print('#### Loaded parameters object is depreceated, default version will be used')
                     print('Parameter', str(key), 'not found, using default: ', self.__dict__[key])
-
-
-
-
